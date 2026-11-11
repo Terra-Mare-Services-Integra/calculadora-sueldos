@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
 import { REGIMEN } from '../lib/categorias.js';
-import { proyectoNuevo, calcularProyecto, migrarProyecto, migrarACatalogo } from '../lib/proyecto.js';
+import { proyectoNuevo, calcularProyecto, migrarProyecto, migrarACatalogo, completarAdProyecto } from '../lib/proyecto.js';
 import { fmt, fmt0, fmtMes } from '../lib/formato.js';
 import { hoyMes } from '../lib/escalas.js';
 import Configuracion from './proyecto/Configuracion.jsx';
@@ -28,7 +28,7 @@ export default function Proyecto({ ctx, id, seccion }) {
       if (e) { setError(e.message); return; }
       setFila(data);
       const base = { ...proyectoNuevo({ nombre: data.nombre, regimen: 'terramare' }), adicionales: undefined, ...data.datos, nombre: data.nombre };
-      setP(migrarACatalogo(migrarProyecto(base), ctx.datos.adicionales));
+      setP(completarAdProyecto(migrarACatalogo(migrarProyecto(base), ctx.datos.adicionales), ctx.datos.adicionales));
     });
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 

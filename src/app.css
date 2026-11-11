@@ -259,3 +259,38 @@ label.en-linea{ flex-direction:row; align-items:center; gap:6px; font-weight:500
 label.en-linea input{ min-height:auto; }
 .paso-cuerpo.ancho{ max-width:none; }
 .adicionales-posicion{ grid-template-columns:repeat(auto-fill, minmax(175px, 1fr)); }
+/* Tripulación compacta (tipo planilla) */
+.encabezado-compacto{ display:flex; align-items:baseline; gap:16px; flex-wrap:wrap; }
+.encabezado-compacto h1{ font-size:28px; }
+.barra-comunes{ display:flex; flex-wrap:wrap; gap:8px 16px; align-items:flex-end; margin-top:12px; padding:10px 12px; background:var(--tm-blue-050); border:1px solid var(--tm-blue-light); }
+.barra-comunes > .etiqueta{ align-self:center; color:var(--tm-blue-deep); }
+.barra-comunes label{ font-size:11px; }
+.barra-comunes select.adicional{ min-width:150px; }
+.depto{ margin-top:16px; }
+.depto-linea{ display:flex; align-items:center; gap:8px 16px; flex-wrap:wrap; padding:8px 12px; background:var(--tm-surface); border-bottom:1px solid var(--border-subtle); }
+.depto-linea h2{ font-size:18px; margin:0; min-width:90px; }
+.depto-linea .depto-cifras{ font-size:12px; color:var(--text-muted); }
+.depto-linea .depto-cifras b{ font-family:var(--font-mono); color:var(--tm-ink); font-weight:500; }
+.agregar-rapido{ display:flex; flex-wrap:wrap; gap:4px; margin-left:auto; align-items:center; }
+button.mini{ min-height:24px; padding:2px 8px; font-size:11px; font-weight:500; }
+select.compacto, input.compacto{ min-height:26px; padding:2px 6px; font-size:12px; }
+select.compacto.puesto{ min-width:170px; font-weight:600; }
+input.compacto.cant{ width:52px; text-align:right; font-family:var(--font-mono); }
+.tabla-marco.sin-borde{ border:0; margin-top:0; }
+table.tripulacion th{ font-size:11px; padding:4px 6px; white-space:nowrap; }
+table.tripulacion td{ padding:3px 6px; }
+table.tripulacion select.adicional{ min-height:26px; padding:2px 4px; font-size:12px; width:auto; min-width:92px; max-width:170px; }
+table.tripulacion .adicional.manual input{ min-height:26px; padding:2px 4px; }
+table.tripulacion tr.abierta td{ background:var(--tm-blue-050); }
+table.tripulacion .fuerte{ font-weight:600; color:var(--tm-blue-deep); }
+.acciones-linea{ white-space:nowrap; text-align:right; }
+tr.detalle-linea td{ background:var(--tm-surface); padding:10px 12px; }
+.detalle-grilla{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px 12px; }
+.detalle-grilla label{ font-size:11px; }
+.separador{ flex:1; }
+.totales-tripulacion{ display:flex; flex-wrap:wrap; gap:8px 24px; margin-top:16px; padding:10px 14px; border:1px solid var(--border-subtle); background:var(--tm-surface); }
+.totales-tripulacion > span{ display:flex; flex-direction:column; gap:1px; }
+.totales-tripulacion b{ font-family:var(--font-mono); font-weight:500; font-size:15px; }
+.totales-tripulacion .total{ margin-left:auto; }
+.totales-tripulacion .total b{ font-size:18px; color:var(--tm-blue-deep); }
+select.alcance{ margin-top:4px; max-width:240px; }

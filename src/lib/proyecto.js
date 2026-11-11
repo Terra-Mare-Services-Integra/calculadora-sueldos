@@ -35,7 +35,7 @@ export const FRANCOS = [
 ];
 
 export const proyectoNuevo = ({ nombre, cliente = '', regimen, adicionales = [] }) => ({
-  nombre, cliente, regimen, notas: '', adicionales,
+  nombre, cliente, regimen, notas: '', adicionales, adProyecto: {}, alcance: {},
   mes: null,                                   // null = mes actual (última escala vigente)
   tc: { tipo: 'divisa_venta', fecha: null, valores: null, manual: null },
   ajustes: {},                                 // contrato, decreto633, divisas, art, antigüedad, vacaciones (vacío = parámetros)
@@ -55,6 +55,9 @@ export function adicionalesSugeridos(p, categoria) {
   const previa = [...p.lineas].reverse().find((l) => l.categoria === categoria);
   return previa ? { ...previa.a } : {};
 }
+
+/** Alcance de un adicional en el proyecto: 'proyecto' (uno para toda la tripulación) o 'posicion'. */
+export const alcanceDe = (p, c) => p.alcance?.[c.id] ?? c.alcance ?? 'posicion';
 
 /** Opción con que arranca un adicional en una posición: la marcada para su grupo o la predeterminada. */
 export function opcionInicial(adicional, categoria, grupoDe) {
@@ -92,6 +95,19 @@ export function migrarACatalogo(p, catalogo) {
   return { ...p, adicionales: [...ids], lineas };
 }
 
+/** Adicionales de toda la tripulación sin elección en el proyecto: toman lo que ya tenía la primera posición. */
+export function completarAdProyecto(p, catalogo = []) {
+  if (!Array.isArray(p.adicionales)) return p;
+  const adProyecto = { ...(p.adProyecto ?? {}) };
+  for (const id of p.adicionales) {
+    const c = catalogo.find((x) => x.id === id);
+    if (!c || alcanceDe(p, c) !== 'proyecto' || adProyecto[id]) continue;
+    const previa = p.lineas.find((l) => l.ad?.[id]);
+    if (previa) adProyecto[id] = { ...previa.ad[id] };
+  }
+  return { ...p, adProyecto };
+}
+
 /** Proyectos guardados con adicionales comunes (versión anterior): se pasan a cada posición. */
 export function migrarProyecto(p) {
   const comunes = p.defaults?.a;
@@ -113,8 +129,9 @@ export function lineaEfectiva(p, linea, catalogo = []) {
     for (const id of p.adicionales) {
       const c = catalogo.find((x) => x.id === id);
       if (!c || a[c.casillero] === undefined) continue;
-      // Sin elección todavía: vale la opción preseleccionada.
-      const sel = linea.ad?.[id] ?? opcionInicial(c, linea.categoria, (k) => CATEGORIA[k]?.grupo);
+      // De toda la tripulación: la elección del proyecto. Por posición: la de la línea. Sin elección: la preseleccionada.
+      const sel = (alcanceDe(p, c) === 'proyecto' ? p.adProyecto?.[id] : linea.ad?.[id])
+        ?? opcionInicial(c, linea.categoria, (k) => CATEGORIA[k]?.grupo);
       a[c.casillero] += Number(sel.valor) || 0;
     }
   } else {

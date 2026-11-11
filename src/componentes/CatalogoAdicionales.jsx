@@ -12,7 +12,7 @@ const casilleroCorto = { rj: 'sobre el básico', supply: 'sobre básico + RJ', l
  * Catálogo de adicionales: se tildan los que aplican al proyecto, se crean nuevos (quedan en el catálogo para todos)
  * y se editan los existentes. seleccion: ids tildados. onCambio(ids, nuevoId?).
  */
-export default function CatalogoAdicionales({ ctx, seleccion, onCambio }) {
+export default function CatalogoAdicionales({ ctx, seleccion, onCambio, alcance, onAlcance }) {
   const catalogo = (ctx.datos.adicionales ?? []).filter((c) => c.activo);
   const [editando, setEditando] = useState(null); // null | 'nuevo' | adicional
   const alternar = (id) => onCambio(seleccion.includes(id) ? seleccion.filter((x) => x !== id) : [...seleccion, id]);
@@ -30,6 +30,13 @@ export default function CatalogoAdicionales({ ctx, seleccion, onCambio }) {
                   <strong>{c.nombre}</strong>
                   <span className="ayuda">{c.opciones.map((o) => (o.nombre ? `${o.nombre} ${pct(o.valor)}` : pct(o.valor))).join(' · ')}</span>
                   <span className="ayuda">Se calcula {casilleroCorto[c.casillero]}{c.descripcion ? ` · ${c.descripcion}` : ''}</span>
+                  {on && onAlcance ? (
+                    <select className="compacto alcance" value={alcance?.[c.id] ?? c.alcance ?? 'posicion'}
+                      onChange={(e) => onAlcance(c.id, e.target.value)}>
+                      <option value="proyecto">Uno para toda la tripulación</option>
+                      <option value="posicion">Se elige en cada posición</option>
+                    </select>
+                  ) : <span className="ayuda">{(c.alcance ?? 'posicion') === 'proyecto' ? 'Uno para toda la tripulación' : 'Se elige en cada posición'}</span>}
                 </span>
               </label>
               {ctx.editor && <button type="button" className="terciario" onClick={() => setEditando(c)}>Editar</button>}
@@ -50,6 +57,7 @@ export default function CatalogoAdicionales({ ctx, seleccion, onCambio }) {
 function EditorAdicional({ ctx, adicional, cerrar }) {
   const [f, setF] = useState(() => ({
     nombre: adicional?.nombre ?? '', descripcion: adicional?.descripcion ?? '', casillero: adicional?.casillero ?? 'supply',
+    alcance: adicional?.alcance ?? 'proyecto',
     por_defecto: adicional?.por_defecto ?? false, predeterminada: adicional?.predeterminada ?? 0,
     opciones: (adicional?.opciones ?? [{ nombre: 'No', valor: 0 }, { nombre: '', valor: '' }])
       .map((o) => ({ ...o, valor: o.valor === '' ? '' : String(Math.round(Number(o.valor) * 1e6) / 1e4).replace('.', ','), grupos: o.grupos ?? [] })),
@@ -63,7 +71,7 @@ function EditorAdicional({ ctx, adicional, cerrar }) {
       .map((o) => ({ nombre: o.nombre.trim(), valor: (leerNumero(o.valor) ?? NaN) / 100, ...(o.grupos.length ? { grupos: o.grupos } : {}) }));
     if (!f.nombre.trim()) { setError('Falta el nombre.'); return; }
     if (!opciones.length || opciones.some((o) => !Number.isFinite(o.valor))) { setError('Revisá los porcentajes de las opciones.'); return; }
-    const fila = { nombre: f.nombre.trim(), descripcion: f.descripcion.trim(), casillero: f.casillero, por_defecto: f.por_defecto,
+    const fila = { nombre: f.nombre.trim(), descripcion: f.descripcion.trim(), casillero: f.casillero, alcance: f.alcance, por_defecto: f.por_defecto,
       predeterminada: Math.min(f.predeterminada, opciones.length - 1), opciones, ...(desactivar ? { activo: false } : {}) };
     setGuardando(true);
     const r = adicional
@@ -83,6 +91,12 @@ function EditorAdicional({ ctx, adicional, cerrar }) {
         <label>Cómo se calcula
           <select value={f.casillero} onChange={(e) => setF({ ...f, casillero: e.target.value })}>
             {CASILLEROS.map((c) => <option key={c.k} value={c.k}>{c.label}</option>)}
+          </select>
+        </label>
+        <label>Se elige
+          <select value={f.alcance} onChange={(e) => setF({ ...f, alcance: e.target.value })}>
+            <option value="proyecto">Uno para toda la tripulación (ej.: Supply type, Acta)</option>
+            <option value="posicion">En cada posición (ej.: RJ)</option>
           </select>
         </label>
         <label>Nota (opcional)<input value={f.descripcion} onChange={(e) => setF({ ...f, descripcion: e.target.value })} placeholder="Ej.: según acta 04-08-22" /></label>

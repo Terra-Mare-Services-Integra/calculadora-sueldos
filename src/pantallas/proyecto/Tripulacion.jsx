@@ -1,22 +1,29 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { CATEGORIAS_LIQUIDACION, CATEGORIA, DEPARTAMENTOS } from '../../lib/categorias.js';
-import { DIAS, EXTRAS, FRANCOS, posicionNueva, adicionalesIniciales, opcionInicial } from '../../lib/proyecto.js';
+import { DIAS, EXTRAS, FRANCOS, posicionNueva, adicionalesIniciales, opcionInicial, alcanceDe } from '../../lib/proyecto.js';
 import { fmt, fmt0, fmtMes } from '../../lib/formato.js';
 import { Num, SiNo, SelectorOpcion } from '../../componentes/Campos.jsx';
 import { opcionesDe, adicionalesPredefinidos } from '../../lib/parametros.js';
 
-// Puestos que se ofrecen con un clic en cada bloque (el resto, en la lista).
+// Puestos que se ofrecen con un clic en cada bloque (el resto, en "Otro…").
 const RAPIDOS = {
   cubierta: ['capitan-ultramar', '1-of-cubierta', '2-of-cubierta', '3-of-cubierta', 'contramaestre', '1-cabo', 'marinero'],
   maquinas: ['jefe-maquina', '1-of-maquina', '2-of-maquina', '3-of-maquina', 'electricista', 'mecanico', 'engrasador'],
   cocina: ['cocinero', '2-cocinero', 'ayudante-cocina', '1-mozo', '2-mozo', 'enfermero'],
 };
+const CORTOS = {
+  'capitan-ultramar': 'Capitán', '1-of-cubierta': '1er Oficial', '2-of-cubierta': '2do Oficial', '3-of-cubierta': '3er Oficial',
+  contramaestre: 'Contramaestre', '1-cabo': '1er Cabo', marinero: 'Marinero', 'jefe-maquina': 'Jefe de Máquina', '1-of-maquina': '1er Of. Máq.',
+  '2-of-maquina': '2do Of. Máq.', '3-of-maquina': '3er Of. Máq.', electricista: 'Electricista', mecanico: 'Mecánico', engrasador: 'Engrasador',
+  cocinero: 'Cocinero', '2-cocinero': '2do Cocinero', 'ayudante-cocina': 'Ayudante', '1-mozo': '1er Mozo', '2-mozo': '2do Mozo', enfermero: 'Enfermero',
+};
 const SUBGRUPOS = [['', 'Convenio general'], ['pilotaje', 'Pilotaje'], ['car', 'Escala CAR']];
+const nombreCorto = (n) => n.replace(/^Adicional /, '').replace('Responsabilidad jerárquica / plus operativo', 'RJ / plus op.');
 
 function SelectorPuesto({ valor, onChange, depto }) {
   const cats = CATEGORIAS_LIQUIDACION.filter((c) => !depto || c.depto === depto);
   return (
-    <select value={valor} onChange={(e) => onChange(e.target.value)}>
+    <select className="compacto puesto" value={valor} onChange={(e) => onChange(e.target.value)}>
       {SUBGRUPOS.map(([g, n]) => {
         const xs = cats.filter((c) => (g ? c.grupo === g : c.grupo !== 'pilotaje' && c.grupo !== 'car'));
         return xs.length ? <optgroup key={g} label={n}>{xs.map((c) => <option key={c.clave} value={c.clave}>{c.nombre}</option>)}</optgroup> : null;
@@ -25,56 +32,34 @@ function SelectorPuesto({ valor, onChange, depto }) {
   );
 }
 
-function Agregar({ depto, agregar }) {
-  const [otro, setOtro] = useState('');
-  const resto = CATEGORIAS_LIQUIDACION.filter((c) => c.depto === depto && !RAPIDOS[depto].includes(c.clave));
-  return (
-    <div className="agregar-bloque">
-      {RAPIDOS[depto].map((k) => <button key={k} className="secundario chico" onClick={() => agregar(k)}>+ {CATEGORIA[k].nombre}</button>)}
-      {resto.length > 0 && (
-        <select value={otro} onChange={(e) => { if (e.target.value) agregar(e.target.value); setOtro(''); }}>
-          <option value="">+ Otro puesto…</option>
-          {resto.map((c) => <option key={c.clave} value={c.clave}>{c.nombre}</option>)}
-        </select>
-      )}
-    </div>
-  );
-}
-
 export default function Tripulacion({ p, set, calc }) {
-  const porId = Object.fromEntries(calc.lineas.map((x) => [x.original.id, x]));
-  const setLinea = (id, f) => set((q) => ({ lineas: q.lineas.map((l) => (l.id === id ? { ...l, ...f(l) } : l)) }));
+  const [abierta, setAbierta] = useState(null);
   const g = calc.c.valores?.globales ?? {};
   const catalogo = calc.catalogo;
   const grupoDe = (k) => CATEGORIA[k]?.grupo;
+  const delProyecto = (p.adicionales ?? []).map((id) => catalogo.find((c) => c.id === id)).filter(Boolean);
+  const comunes = delProyecto.filter((c) => alcanceDe(p, c) === 'proyecto');
+  const porPosicion = delProyecto.filter((c) => alcanceDe(p, c) !== 'proyecto');
+  const porId = Object.fromEntries(calc.lineas.map((x) => [x.original.id, x]));
+  const fx = calc.c.fx;
+
+  const setLinea = (id, f) => set((q) => ({ lineas: q.lineas.map((l) => (l.id === id ? { ...l, ...f(l) } : l)) }));
   const francosPredef = (categoria) => {
     const pre = adicionalesPredefinidos(g, categoria);
     return { regimenFranco: pre.regimenFranco, precioFranco: pre.precioFranco };
   };
-  // Una posición nueva copia los adicionales de la última del mismo puesto; si no hay, toma los preseleccionados.
+  // Una posición nueva copia lo de la última del mismo puesto; si no hay, toma los preseleccionados.
   const agregar = (categoria) => set((q) => {
     const previa = [...q.lineas].reverse().find((l) => l.categoria === categoria);
     const ad = previa ? structuredClone(previa.ad ?? {}) : adicionalesIniciales(catalogo, q.adicionales ?? [], categoria, grupoDe);
     const a = previa ? { ...previa.a } : francosPredef(categoria);
     return { lineas: [...q.lineas, { ...posicionNueva(categoria), ad, a }] };
   });
-  const predefinidos = (l) => setLinea(l.id, () => ({
-    ad: adicionalesIniciales(catalogo, p.adicionales ?? [], l.categoria, grupoDe), a: francosPredef(l.categoria),
-  }));
-  const opcionesFranco = (k) => opcionesDe(g, k).map((v) => ({ nombre: '', valor: v }));
-  const selFranco = (l, k) => {
-    const ops = opcionesDe(g, k);
-    const v = Number(l.a?.[k]) || 0;
-    const i = ops.findIndex((o) => Math.abs(o - v) < 1e-9);
-    return { i: i >= 0 ? i : null, valor: v };
-  };
   const quitar = (id) => set((q) => ({ lineas: q.lineas.filter((l) => l.id !== id) }));
   const duplicar = (l) => set((q) => {
     const i = q.lineas.findIndex((x) => x.id === l.id);
-    const copia = { ...structuredClone(l), id: crypto.randomUUID() };
-    return { lineas: [...q.lineas.slice(0, i + 1), copia, ...q.lineas.slice(i + 1)] };
+    return { lineas: [...q.lineas.slice(0, i + 1), { ...structuredClone(l), id: crypto.randomUUID() }, ...q.lineas.slice(i + 1)] };
   });
-  // Sube o baja dentro del mismo bloque.
   const mover = (id, d) => set((q) => {
     const ls = [...q.lineas]; const i = ls.findIndex((x) => x.id === id);
     const dep = CATEGORIA[ls[i].categoria]?.depto;
@@ -83,157 +68,148 @@ export default function Tripulacion({ p, set, calc }) {
     if (j < 0 || j >= ls.length) return {};
     [ls[i], ls[j]] = [ls[j], ls[i]]; return { lineas: ls };
   });
-
-  const resumenDias = (l) => {
-    const dias = DIAS.map((d) => [d, l.dias?.[d.k] ?? p.defaults?.dias?.[d.k] ?? 0]).filter(([, v]) => v)
-      .map(([d, v]) => `${v} días ${d.label.toLowerCase()}`);
-    const ex = EXTRAS.filter((e) => (l.extras?.[e.k] ?? p.defaults?.extras?.[e.k])).map((e) => e.label.toLowerCase());
-    const propio = Object.values(l.dias ?? {}).some((v) => v !== undefined) || Object.values(l.extras ?? {}).some((v) => v !== undefined);
-    return `${[...dias, ...ex].join(' · ') || 'Sin días cargados'}${propio ? ' (propios de esta posición)' : ' (del proyecto)'}`;
+  const opcionesFranco = (k) => opcionesDe(g, k).map((v) => ({ nombre: '', valor: v }));
+  const selFranco = (l, k) => {
+    const ops = opcionesDe(g, k); const v = Number(l.a?.[k]) || 0;
+    const i = ops.findIndex((o) => Math.abs(o - v) < 1e-9);
+    return { i: i >= 0 ? i : null, valor: v };
   };
-
-  const tarjeta = (l, i) => {
-          const x = porId[l.id];
-          const esc = x?.escala;
-          const n = Number(l.cantidad) || 0;
-          return (
-            <article key={l.id} className="posicion">
-              <header>
-                <span className="numero">{i + 1}</span>
-                <SelectorPuesto valor={l.categoria} depto={CATEGORIA[l.categoria]?.depto} onChange={(v) => setLinea(l.id, () => ({ categoria: v }))} />
-                <span className="cantidad">
-                  <button className="secundario" onClick={() => setLinea(l.id, (q) => ({ cantidad: Math.max(0, (Number(q.cantidad) || 0) - 1) }))}>−</button>
-                  <input className="num" type="number" min="0" value={l.cantidad} onChange={(e) => setLinea(l.id, () => ({ cantidad: Number(e.target.value) || 0 }))} />
-                  <button className="secundario" onClick={() => setLinea(l.id, (q) => ({ cantidad: (Number(q.cantidad) || 0) + 1 }))}>+</button>
-                  <span className="ayuda">{n === 1 ? 'persona' : 'personas'}</span>
-                </span>
-                <input className="nota" placeholder="Nota (ej.: relevo, guardia nocturna)" value={l.nota} onChange={(e) => setLinea(l.id, () => ({ nota: e.target.value }))} />
-                <span className="acciones">
-                  <button className="terciario" title="Subir" onClick={() => mover(l.id, -1)}>↑</button>
-                  <button className="terciario" title="Bajar" onClick={() => mover(l.id, 1)}>↓</button>
-                  <button className="terciario" onClick={() => duplicar(l)}>Duplicar</button>
-                  <button className="terciario" onClick={() => quitar(l.id)}>Quitar</button>
-                </span>
-              </header>
-
-              <div className="posicion-cuerpo">
-                <div className="campos-posicion">
-                  <div className="adicionales-posicion">
-                    {(p.adicionales ?? []).map((id) => catalogo.find((c) => c.id === id)).filter(Boolean).map((c) => (
-                      <label key={c.id}>{c.nombre}
-                        <SelectorOpcion opciones={c.opciones} sel={l.ad?.[c.id] ?? opcionInicial(c, l.categoria, grupoDe)}
-                          onChange={(sel) => setLinea(l.id, (q) => ({ ad: { ...q.ad, [c.id]: sel } }))} />
-                      </label>
-                    ))}
-                    {FRANCOS.map((f) => (
-                      <label key={f.k}>{f.label}
-                        <SelectorOpcion opciones={opcionesFranco(f.k)} sel={selFranco(l, f.k)}
-                          onChange={(sel) => setLinea(l.id, (q) => ({ a: { ...q.a, [f.k]: sel.valor } }))} />
-                      </label>
-                    ))}
-                    <button className="terciario predef" title="Volver a los valores preseleccionados" onClick={() => predefinidos(l)}>Preseleccionados</button>
-                  </div>
-                  <div className="grupo-campos">
-                    <span className="etiqueta">Días y costos</span>
-                    <span className="ayuda">{resumenDias(l)}</span>
-                  </div>
-                  <details>
-                    <summary>Días, costos, antigüedad y vacaciones propios de esta posición</summary>
-                    <div className="grupo-campos">
-                      <span className="etiqueta">Días por persona</span>
-                      <div className="mini-rejilla">
-                        {DIAS.map((d) => (
-                          <label key={d.k} className={l.dias?.[d.k] !== undefined ? 'propio' : ''}>{d.label}
-                            <Num valor={l.dias?.[d.k]} heredado={p.defaults?.dias?.[d.k] ?? 0} onChange={(v) => setLinea(l.id, (q) => ({ dias: { ...q.dias, [d.k]: v } }))} />
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="grupo-campos">
-                      <span className="etiqueta">Costos por persona</span>
-                      <div className="fila-botones" style={{ marginTop: 4 }}>
-                        {EXTRAS.map((e) => (
-                          <SiNo key={e.k} etiqueta={e.label} valor={l.extras?.[e.k]} heredado={p.defaults?.extras?.[e.k]}
-                            onChange={(v) => setLinea(l.id, (q) => ({ extras: { ...q.extras, [e.k]: v } }))} />
-                        ))}
-                      </div>
-                    </div>
-                    <span className="etiqueta">Antigüedad y vacaciones</span>
-                    <div className="mini-rejilla">
-                      <label className={l.antiguedadAnios !== '' && l.antiguedadAnios !== undefined ? 'propio' : ''}>Antigüedad
-                        <Num valor={l.antiguedadAnios === '' ? undefined : l.antiguedadAnios} heredado={calc.params.antiguedadAnios} unidad="años"
-                          onChange={(v) => setLinea(l.id, () => ({ antiguedadAnios: v ?? '' }))} /></label>
-                      <label className={l.vacacionesDias !== '' && l.vacacionesDias !== undefined ? 'propio' : ''}>Vacaciones
-                        <Num valor={l.vacacionesDias === '' ? undefined : l.vacacionesDias} heredado={calc.params.vacacionesDias} unidad="días"
-                          onChange={(v) => setLinea(l.id, () => ({ vacacionesDias: v ?? '' }))} /></label>
-                    </div>
-                  </details>
-                </div>
-
-                <div className="resultado-posicion">
-                  {x ? (
-                    <>
-                      <div><span className="etiqueta">Básico</span><span className="mono">{esc?.monto ? fmt(x.basico) : <span className="chip critico">sin cargar</span>}</span>
-                        {esc?.monto > 0 && <span className="ayuda">{esc.override ? 'override manual' : `${esc.acta ?? esc.origen} · ${fmtMes(esc.mes)}`}{esc.provisoria ? ' · provisorio' : ''}</span>}</div>
-                      <div><span className="etiqueta">Costo mensual navegado (ARS)</span><span className="mono">{fmt(x.r.liq.navegado.mensual)}</span></div>
-                      <div><span className="etiqueta">Por día navegado</span><span className="mono">ARS {fmt(x.r.unitarioDia.navegado)}</span>
-                        <span className="mono">USD {calc.c.fx ? fmt(x.r.unitarioDia.navegado / calc.c.fx) : '—'}</span></div>
-                      <div className="total-posicion"><span className="etiqueta">Total de la posición ({fmt0(n)} × días)</span>
-                        <span className="mono grande">USD {calc.c.fx ? fmt(x.r.usd.total) : '—'}</span>
-                        {calc.c.fx > 0 && x.r.usd.total - x.r.usd.sueldos > 0 && <span className="ayuda">sueldos {fmt(x.r.usd.sueldos)} + otros {fmt(x.r.usd.total - x.r.usd.sueldos)}</span>}</div>
-                    </>
-                  ) : <span className="aviso">Faltan datos para calcular.</span>}
-                </div>
-              </div>
-            </article>
-    );
-  };
+  const columnas = 2 + porPosicion.length + FRANCOS.length + 4;
 
   return (
     <>
-      <div><h1>Tripulación.</h1><div className="filete" /></div>
-      <p className="aviso">Armá la tripulación por bloque: puestos y cantidades. Los días y costos por persona salen de la configuración del proyecto (en gris);
-        se pueden cambiar en una posición. Cada posición arranca con la opción preseleccionada de cada adicional del proyecto (o con lo de la anterior
-        del mismo puesto): elegí otra de la lista o "Otro valor…" para escribirla. Los adicionales del proyecto se eligen en Configuración.</p>
+      <div className="encabezado-compacto">
+        <h1>Tripulación.</h1>
+        <span className="aviso">Una línea por puesto. Lo que es igual para todos se elige arriba; en cada línea, lo que cambia por puesto.</span>
+      </div>
+
+      {comunes.length > 0 && (
+        <div className="barra-comunes">
+          <span className="etiqueta">Para toda la tripulación</span>
+          {comunes.map((c) => (
+            <label key={c.id}>{nombreCorto(c.nombre)}
+              <SelectorOpcion opciones={c.opciones} sel={p.adProyecto?.[c.id] ?? opcionInicial(c, '', grupoDe)}
+                onChange={(sel) => set((q) => ({ adProyecto: { ...q.adProyecto, [c.id]: sel } }))} />
+            </label>
+          ))}
+        </div>
+      )}
 
       {DEPARTAMENTOS.map((d) => {
         const ls = p.lineas.filter((l) => CATEGORIA[l.categoria]?.depto === d.clave);
         const calcs = ls.map((l) => porId[l.id]).filter(Boolean);
         const personas = ls.reduce((s, l) => s + (Number(l.cantidad) || 0), 0);
-        const diaUsd = calc.c.fx ? calcs.reduce((s, x) => s + x.r.unitarioDia.navegado * (Number(x.linea.cantidad) || 0), 0) / calc.c.fx : 0;
+        const diaUsd = fx ? calcs.reduce((s, x) => s + x.r.unitarioDia.navegado * (Number(x.linea.cantidad) || 0), 0) / fx : 0;
         const total = calcs.reduce((s, x) => s + x.r.usd.total, 0);
         return (
           <section key={d.clave} className={`depto depto-${d.clave}`}>
-            <header className="depto-cabeza">
-              <div><h2>{d.nombre}</h2><span className="ayuda">{d.detalle}</span></div>
-              <div className="depto-cifras">
-                <span><span className="etiqueta">Personas</span><span className="mono">{fmt0(personas)}</span></span>
-                <span><span className="etiqueta">USD / día navegado</span><span className="mono">{calc.c.fx ? fmt(diaUsd) : '—'}</span></span>
-                <span><span className="etiqueta">Total USD</span><span className="mono">{calc.c.fx ? fmt(total) : '—'}</span></span>
-              </div>
-            </header>
-            <div className="posiciones">
-              {ls.map((l, k) => tarjeta(l, k))}
-              {!ls.length && <p className="aviso">Sin posiciones en {d.nombre.toLowerCase()}.</p>}
+            <div className="depto-linea">
+              <h2>{d.nombre}</h2>
+              <span className="depto-cifras"><b>{fmt0(personas)}</b> pers. · USD/día <b>{fx ? fmt(diaUsd) : '—'}</b> · Total USD <b>{fx ? fmt(total) : '—'}</b></span>
+              <span className="agregar-rapido">
+                {RAPIDOS[d.clave].map((k) => <button key={k} className="mini secundario" onClick={() => agregar(k)}>+ {CORTOS[k] ?? CATEGORIA[k].nombre}</button>)}
+                <select className="compacto" value="" onChange={(e) => e.target.value && agregar(e.target.value)}>
+                  <option value="">+ Otro…</option>
+                  {CATEGORIAS_LIQUIDACION.filter((c) => c.depto === d.clave && !RAPIDOS[d.clave].includes(c.clave))
+                    .map((c) => <option key={c.clave} value={c.clave}>{c.nombre}</option>)}
+                </select>
+              </span>
             </div>
-            <Agregar depto={d.clave} agregar={agregar} />
+            {ls.length > 0 && (
+              <div className="tabla-marco sin-borde"><table className="tabla tripulacion">
+                <thead>
+                  <tr>
+                    <th>Puesto</th><th className="n">Cant.</th>
+                    {porPosicion.map((c) => <th key={c.id} title={c.nombre}>{nombreCorto(c.nombre)}</th>)}
+                    <th>Rég. franco</th><th>Precio franco</th>
+                    <th className="n">Básico</th><th className="n">USD / día</th><th className="n">Total USD</th><th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {ls.map((l) => {
+                    const x = porId[l.id];
+                    const esc = x?.escala;
+                    const abiertaEsta = abierta === l.id;
+                    return (
+                      <Fragment key={l.id}>
+                        <tr className={abiertaEsta ? 'abierta' : ''}>
+                          <td><SelectorPuesto valor={l.categoria} depto={d.clave} onChange={(v) => setLinea(l.id, () => ({ categoria: v }))} />
+                            {l.nota && <div className="ayuda">{l.nota}</div>}</td>
+                          <td className="n"><input className="compacto cant" type="number" min="0" value={l.cantidad}
+                            onChange={(e) => setLinea(l.id, () => ({ cantidad: Number(e.target.value) || 0 }))} /></td>
+                          {porPosicion.map((c) => (
+                            <td key={c.id}><SelectorOpcion opciones={c.opciones} sel={l.ad?.[c.id] ?? opcionInicial(c, l.categoria, grupoDe)}
+                              onChange={(sel) => setLinea(l.id, (q) => ({ ad: { ...q.ad, [c.id]: sel } }))} /></td>
+                          ))}
+                          {FRANCOS.map((f) => (
+                            <td key={f.k}><SelectorOpcion opciones={opcionesFranco(f.k)} sel={selFranco(l, f.k)}
+                              onChange={(sel) => setLinea(l.id, (q) => ({ a: { ...q.a, [f.k]: sel.valor } }))} /></td>
+                          ))}
+                          <td className="n" title={esc?.acta ? `${esc.acta} · ${fmtMes(esc.mes)}${esc.provisoria ? ' · provisorio' : ''}` : ''}>
+                            {esc?.monto ? fmt(x.basico) : <span className="chip critico">sin cargar</span>}</td>
+                          <td className="n">{x && fx ? fmt(x.r.unitarioDia.navegado / fx) : '—'}</td>
+                          <td className="n fuerte">{x && fx ? fmt(x.r.usd.total) : '—'}</td>
+                          <td className="acciones-linea">
+                            <button className="mini terciario" title="Más opciones de esta línea" onClick={() => setAbierta(abiertaEsta ? null : l.id)}>{abiertaEsta ? '▴' : '⋯'}</button>
+                            <button className="mini terciario" title="Quitar" onClick={() => quitar(l.id)}>×</button>
+                          </td>
+                        </tr>
+                        {abiertaEsta && (
+                          <tr className="detalle-linea">
+                            <td colSpan={columnas}>
+                              <div className="detalle-grilla">
+                                <label>Nota<input className="compacto" value={l.nota} placeholder="Ej.: relevo, guardia nocturna"
+                                  onChange={(e) => setLinea(l.id, () => ({ nota: e.target.value }))} /></label>
+                                {DIAS.map((dd) => (
+                                  <label key={dd.k} className={l.dias?.[dd.k] !== undefined ? 'propio' : ''}>Días {dd.label.toLowerCase()}
+                                    <Num valor={l.dias?.[dd.k]} heredado={p.defaults?.dias?.[dd.k] ?? 0} ancho={60}
+                                      onChange={(v) => setLinea(l.id, (q) => ({ dias: { ...q.dias, [dd.k]: v } }))} /></label>
+                                ))}
+                                <label className={l.antiguedadAnios !== '' && l.antiguedadAnios !== undefined ? 'propio' : ''}>Antigüedad
+                                  <Num valor={l.antiguedadAnios === '' ? undefined : l.antiguedadAnios} heredado={calc.params.antiguedadAnios} unidad="años" ancho={60}
+                                    onChange={(v) => setLinea(l.id, () => ({ antiguedadAnios: v ?? '' }))} /></label>
+                                <label className={l.vacacionesDias !== '' && l.vacacionesDias !== undefined ? 'propio' : ''}>Vacaciones
+                                  <Num valor={l.vacacionesDias === '' ? undefined : l.vacacionesDias} heredado={calc.params.vacacionesDias} unidad="días" ancho={60}
+                                    onChange={(v) => setLinea(l.id, () => ({ vacacionesDias: v ?? '' }))} /></label>
+                              </div>
+                              <div className="fila-botones" style={{ marginTop: 8 }}>
+                                {EXTRAS.map((e) => (
+                                  <SiNo key={e.k} etiqueta={e.label} valor={l.extras?.[e.k]} heredado={p.defaults?.extras?.[e.k]}
+                                    onChange={(v) => setLinea(l.id, (q) => ({ extras: { ...q.extras, [e.k]: v } }))} />
+                                ))}
+                                <span className="separador" />
+                                <button className="mini secundario" onClick={() => mover(l.id, -1)}>↑ Subir</button>
+                                <button className="mini secundario" onClick={() => mover(l.id, 1)}>↓ Bajar</button>
+                                <button className="mini secundario" onClick={() => duplicar(l)}>Duplicar</button>
+                                <button className="mini secundario" onClick={() => setLinea(l.id, () => ({
+                                  ad: adicionalesIniciales(catalogo, p.adicionales ?? [], l.categoria, grupoDe), a: francosPredef(l.categoria) }))}>Preseleccionados</button>
+                              </div>
+                              {x && <p className="ayuda">Básico {fmt(x.basico)} ({esc?.override ? 'override manual' : `${esc?.acta ?? esc?.origen ?? ''} · ${fmtMes(esc?.mes)}`}{esc?.provisoria ? ' · provisorio' : ''})
+                                · costo mensual navegado ARS {fmt(x.r.liq.navegado.mensual)} · por día ARS {fmt(x.r.unitarioDia.navegado)}
+                                {x.r.usd.total - x.r.usd.sueldos > 0 ? ` · sueldos USD ${fmt(x.r.usd.sueldos)} + otros ${fmt(x.r.usd.total - x.r.usd.sueldos)}` : ''}</p>}
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table></div>
+            )}
           </section>
         );
       })}
 
       {p.lineas.length > 0 && (
-        <section className="bloque">
-          <h3>Resumen de la tripulación</h3>
-          <div className="tarjetas">
-            <div className="tarjeta"><div className="etiqueta">Personas</div><div className="grande">{fmt0(calc.resumen.personas)}</div></div>
-            <div className="tarjeta"><div className="etiqueta">Costo por día navegado (USD)</div><div className="grande">{calc.c.fx ? fmt(calc.navegadoDiaUsd) : '—'}</div></div>
-            <div className="tarjeta"><div className="etiqueta">Sueldos (USD)</div><div className="grande">{fmt(calc.resumen.usd.sueldos ?? 0)}</div></div>
-            <div className="tarjeta"><div className="etiqueta">Traslados, hospedaje, lavandería y EPP (USD)</div>
-              <div className="grande">{fmt(['trasladoDomestico', 'trasladoPuerto', 'hospedaje', 'lavanderia', 'epp'].reduce((s, k) => s + (calc.resumen.usd[k] ?? 0), 0))}</div></div>
-            <div className="tarjeta elegida"><div className="etiqueta">Total del proyecto (USD)</div><div className="grande">{calc.c.fx ? fmt(calc.resumen.usd.total ?? 0) : '—'}</div></div>
-            <div className="tarjeta"><div className="etiqueta">Víveres (USD por día)</div><div className="grande">{fmt(calc.resumen.viveresDia)}</div></div>
-          </div>
-        </section>
+        <div className="totales-tripulacion">
+          <span><span className="etiqueta">Personas</span><b>{fmt0(calc.resumen.personas)}</b></span>
+          <span><span className="etiqueta">USD por día navegado</span><b>{fx ? fmt(calc.navegadoDiaUsd) : '—'}</b></span>
+          <span><span className="etiqueta">Sueldos USD</span><b>{fmt(calc.resumen.usd.sueldos ?? 0)}</b></span>
+          <span><span className="etiqueta">Traslados, hospedaje, lavandería y EPP USD</span>
+            <b>{fmt(['trasladoDomestico', 'trasladoPuerto', 'hospedaje', 'lavanderia', 'epp'].reduce((s, k) => s + (calc.resumen.usd[k] ?? 0), 0))}</b></span>
+          <span><span className="etiqueta">Víveres USD/día</span><b>{fmt(calc.resumen.viveresDia)}</b></span>
+          <span className="total"><span className="etiqueta">Total del proyecto USD</span><b>{fx ? fmt(calc.resumen.usd.total ?? 0) : '—'}</b></span>
+        </div>
       )}
     </>
   );

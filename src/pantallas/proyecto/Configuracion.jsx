@@ -78,8 +78,16 @@ export default function Configuracion({ ctx, p, set, calc }) {
 
       <section className="bloque">
         <h3>Adicionales del proyecto</h3>
-        <p className="aviso">Los que se pagan en este proyecto. El valor (Supply A/B/C, RJ 84 % o 140 %…) se elige en cada posición, en Tripulación.</p>
-        <CatalogoAdicionales ctx={ctx} seleccion={p.adicionales ?? []} onCambio={(ids) => set((q) => {
+        <p className="aviso">Los que se pagan en este proyecto y si se eligen una vez para toda la tripulación (Supply type, Acta…) o en cada posición (RJ…).
+          Los valores se eligen en Tripulación.</p>
+        <CatalogoAdicionales ctx={ctx} seleccion={p.adicionales ?? []} alcance={p.alcance}
+          onAlcance={(id, v) => set((q) => {
+            // Al pasarlo a "toda la tripulación" arranca con lo que tenía la primera posición.
+            const previa = q.lineas.find((l) => l.ad?.[id]);
+            const adProyecto = v === 'proyecto' && !q.adProyecto?.[id] && previa ? { ...q.adProyecto, [id]: { ...previa.ad[id] } } : q.adProyecto;
+            return { alcance: { ...q.alcance, [id]: v }, adProyecto };
+          })}
+          onCambio={(ids) => set((q) => {
           // Un adicional que se suma al proyecto arranca en cada posición con su opción preseleccionada.
           const nuevos = ids.filter((id) => !(q.adicionales ?? []).includes(id));
           const catalogo = ctx.datos.adicionales ?? [];
