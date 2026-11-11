@@ -1,4 +1,4 @@
-import { CATEGORIA, REGIMEN } from '../../lib/categorias.js';
+import { CATEGORIA, REGIMEN, DEPARTAMENTOS } from '../../lib/categorias.js';
 import { posicionDia } from '../../lib/calculo.js';
 import { TIPOS_TC } from '../TipoCambio.jsx';
 import { fmt, fmt0, fmtMes } from '../../lib/formato.js';
@@ -19,13 +19,15 @@ export default function PosicionDia({ p, set, calc }) {
         <thead><tr><th>Crew personnel</th><th className="n">Unitary cost (ARS per day)</th><th className="n">Quantity</th>
           <th className="n">Total crew (ARS per day)</th><th className="n">Total crew (USD per day)</th></tr></thead>
         <tbody>
-          {pos.filas.map((f) => (
+          {pos.filas.map((f, i) => [
+            CATEGORIA[f.linea.categoria]?.depto !== CATEGORIA[pos.filas[i - 1]?.linea.categoria]?.depto && (
+              <tr key={`d-${i}`} className="seccion"><td colSpan={5}>{DEPARTAMENTOS.find((d) => d.clave === CATEGORIA[f.linea.categoria]?.depto)?.nombre}</td></tr>),
             <tr key={f.linea.id}>
               <td>{CATEGORIA[f.linea.categoria]?.ingles} <span className="ayuda">· {CATEGORIA[f.linea.categoria]?.nombre}{f.linea.nota ? ` · ${f.linea.nota}` : ''}</span></td>
               <td className="n">{fmt(f.unitarioArs)}</td><td className="n">{fmt0(f.cantidad)}</td>
               <td className="n">{fmt(f.totalArs)}</td><td className="n">{fmt(f.totalUsd)}</td>
-            </tr>
-          ))}
+            </tr>,
+          ])}
           {!pos.filas.length && <tr><td colSpan={5} className="aviso">La tripulación está vacía.</td></tr>}
           <tr className="subtotal"><td colSpan={2}>Total crew</td><td className="n">{fmt0(pos.filas.reduce((s, f) => s + f.cantidad, 0))}</td>
             <td className="n">{fmt(pos.filas.reduce((s, f) => s + f.totalArs, 0))}</td><td className="n">{fmt(pos.crewUsd)}</td></tr>

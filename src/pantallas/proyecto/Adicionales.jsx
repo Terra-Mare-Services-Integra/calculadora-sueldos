@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { CATEGORIA } from '../../lib/categorias.js';
+import { CATEGORIA, DEPARTAMENTOS } from '../../lib/categorias.js';
 import { ADICIONALES } from '../../lib/proyecto.js';
 import { opcionesDe } from '../../lib/parametros.js';
 import { fmt } from '../../lib/formato.js';
 import { Pct } from '../../componentes/Campos.jsx';
 
-const GRUPOS = { cubierta: 'Cubierta', maquinas: 'Máquinas', subalterno: 'Subalternos', pilotaje: 'Pilotaje', car: 'CAR' };
 
 export default function Adicionales({ p, set, calc }) {
   const g = calc.c.valores?.globales ?? {};
@@ -15,12 +14,13 @@ export default function Adicionales({ p, set, calc }) {
 
   const setA = (id, k, v) => set((q) => ({ lineas: q.lineas.map((l) => (l.id === id ? { ...l, a: { ...l.a, [k]: v } } : l)) }));
   const aplicar = (k) => set((q) => ({
-    lineas: q.lineas.map((l) => (!grupoMasivo || CATEGORIA[l.categoria]?.grupo === grupoMasivo ? { ...l, a: { ...l.a, [k]: masivo[k] } } : l)),
+    lineas: q.lineas.map((l) => (!grupoMasivo || CATEGORIA[l.categoria]?.depto === grupoMasivo ? { ...l, a: { ...l.a, [k]: masivo[k] } } : l)),
   }));
-  const copiarDeArriba = (i) => set((q) => ({
-    lineas: q.lineas.map((l, j) => (j === i ? { ...l, a: { ...q.lineas[i - 1].a } } : l)),
-  }));
-  const grupos = [...new Set(p.lineas.map((l) => CATEGORIA[l.categoria]?.grupo))];
+  const copiarDe = (id, desdeId) => set((q) => {
+    const origen = q.lineas.find((l) => l.id === desdeId);
+    return { lineas: q.lineas.map((l) => (l.id === id ? { ...l, a: { ...origen.a } } : l)) };
+  });
+  const bloques = DEPARTAMENTOS.map((d) => ({ ...d, ls: p.lineas.filter((l) => CATEGORIA[l.categoria]?.depto === d.clave) })).filter((d) => d.ls.length);
 
   return (
     <>
@@ -50,7 +50,7 @@ export default function Adicionales({ p, set, calc }) {
                   <span className="etiqueta">Cargar a varias</span>
                   <select value={grupoMasivo} onChange={(e) => setGrupoMasivo(e.target.value)}>
                     <option value="">Todas las posiciones</option>
-                    {grupos.map((gr) => <option key={gr} value={gr}>Solo {GRUPOS[gr]}</option>)}
+                    {bloques.map((d) => <option key={d.clave} value={d.clave}>Solo {d.nombre}</option>)}
                   </select>
                 </td>
                 {ADICIONALES.map((a) => (
@@ -61,22 +61,25 @@ export default function Adicionales({ p, set, calc }) {
                 ))}
                 <td /><td />
               </tr>
-              {p.lineas.map((l, i) => {
-                const x = porId[l.id];
-                return (
-                  <tr key={l.id}>
-                    <td className="fijo">
-                      <strong>{CATEGORIA[l.categoria]?.nombre}</strong>
-                      <div className="ayuda">{l.cantidad} {Number(l.cantidad) === 1 ? 'persona' : 'personas'}{l.nota ? ` · ${l.nota}` : ''}</div>
-                    </td>
-                    {ADICIONALES.map((a) => (
-                      <td key={a.k}><Pct valor={l.a?.[a.k]} onChange={(v) => setA(l.id, a.k, v)} opciones={opcionesDe(g, a.k)} /></td>
-                    ))}
-                    <td className="n">{x && calc.c.fx ? fmt(x.r.unitarioDia.navegado / calc.c.fx) : '—'}</td>
-                    <td>{i > 0 && <button className="terciario" title="Copiar los adicionales de la fila de arriba" onClick={() => copiarDeArriba(i)}>↑ Igual a la de arriba</button>}</td>
-                  </tr>
-                );
-              })}
+              {bloques.map((d) => [
+                <tr key={d.clave} className="seccion"><td className="fijo">{d.nombre}</td><td colSpan={ADICIONALES.length + 2} /></tr>,
+                ...d.ls.map((l, i) => {
+                  const x = porId[l.id];
+                  return (
+                    <tr key={l.id}>
+                      <td className="fijo">
+                        <strong>{CATEGORIA[l.categoria]?.nombre}</strong>
+                        <div className="ayuda">{l.cantidad} {Number(l.cantidad) === 1 ? 'persona' : 'personas'}{l.nota ? ` · ${l.nota}` : ''}</div>
+                      </td>
+                      {ADICIONALES.map((a) => (
+                        <td key={a.k}><Pct valor={l.a?.[a.k]} onChange={(v) => setA(l.id, a.k, v)} opciones={opcionesDe(g, a.k)} /></td>
+                      ))}
+                      <td className="n">{x && calc.c.fx ? fmt(x.r.unitarioDia.navegado / calc.c.fx) : '—'}</td>
+                      <td>{i > 0 && <button className="terciario" title="Copiar los adicionales de la fila de arriba" onClick={() => copiarDe(l.id, d.ls[i - 1].id)}>↑ Igual a la de arriba</button>}</td>
+                    </tr>
+                  );
+                }),
+              ])}
             </tbody>
           </table></div>
           {g.ayudaAdicionales && <details open><summary>Guía de adicionales</summary><p className="ayuda">{g.ayudaAdicionales}</p></details>}

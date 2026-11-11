@@ -1,25 +1,46 @@
 import { useState } from 'react';
-import { CATEGORIAS_LIQUIDACION, CATEGORIA } from '../../lib/categorias.js';
+import { CATEGORIAS_LIQUIDACION, CATEGORIA, DEPARTAMENTOS } from '../../lib/categorias.js';
 import { ADICIONALES, DIAS, EXTRAS, posicionNueva, adicionalesSugeridos } from '../../lib/proyecto.js';
 import { fmt, fmt0, fmtMes, fmtPct } from '../../lib/formato.js';
 import { Num, SiNo } from '../../componentes/Campos.jsx';
 
-const GRUPOS = [['cubierta', 'Cubierta'], ['maquinas', 'Máquinas'], ['subalterno', 'Subalternos'], ['pilotaje', 'Pilotaje'], ['car', 'Escala CAR']];
+// Puestos que se ofrecen con un clic en cada bloque (el resto, en la lista).
+const RAPIDOS = {
+  cubierta: ['capitan-ultramar', '1-of-cubierta', '2-of-cubierta', '3-of-cubierta', 'contramaestre', '1-cabo', 'marinero'],
+  maquinas: ['jefe-maquina', '1-of-maquina', '2-of-maquina', '3-of-maquina', 'electricista', 'mecanico', 'engrasador'],
+  cocina: ['cocinero', '2-cocinero', 'ayudante-cocina', '1-mozo', '2-mozo', 'enfermero'],
+};
+const SUBGRUPOS = [['', 'Convenio general'], ['pilotaje', 'Pilotaje'], ['car', 'Escala CAR']];
 
-function SelectorPuesto({ valor, onChange, autoFocus }) {
+function SelectorPuesto({ valor, onChange, depto }) {
+  const cats = CATEGORIAS_LIQUIDACION.filter((c) => !depto || c.depto === depto);
   return (
-    <select value={valor} onChange={(e) => onChange(e.target.value)} autoFocus={autoFocus}>
-      {GRUPOS.map(([g, n]) => (
-        <optgroup key={g} label={n}>
-          {CATEGORIAS_LIQUIDACION.filter((c) => c.grupo === g).map((c) => <option key={c.clave} value={c.clave}>{c.nombre}</option>)}
-        </optgroup>
-      ))}
+    <select value={valor} onChange={(e) => onChange(e.target.value)}>
+      {SUBGRUPOS.map(([g, n]) => {
+        const xs = cats.filter((c) => (g ? c.grupo === g : c.grupo !== 'pilotaje' && c.grupo !== 'car'));
+        return xs.length ? <optgroup key={g} label={n}>{xs.map((c) => <option key={c.clave} value={c.clave}>{c.nombre}</option>)}</optgroup> : null;
+      })}
     </select>
   );
 }
 
+function Agregar({ depto, agregar }) {
+  const [otro, setOtro] = useState('');
+  const resto = CATEGORIAS_LIQUIDACION.filter((c) => c.depto === depto && !RAPIDOS[depto].includes(c.clave));
+  return (
+    <div className="agregar-bloque">
+      {RAPIDOS[depto].map((k) => <button key={k} className="secundario chico" onClick={() => agregar(k)}>+ {CATEGORIA[k].nombre}</button>)}
+      {resto.length > 0 && (
+        <select value={otro} onChange={(e) => { if (e.target.value) agregar(e.target.value); setOtro(''); }}>
+          <option value="">+ Otro puesto…</option>
+          {resto.map((c) => <option key={c.clave} value={c.clave}>{c.nombre}</option>)}
+        </select>
+      )}
+    </div>
+  );
+}
+
 export default function Tripulacion({ p, set, calc }) {
-  const [nuevo, setNuevo] = useState('capitan-ultramar');
   const porId = Object.fromEntries(calc.lineas.map((x) => [x.original.id, x]));
   const setLinea = (id, f) => set((q) => ({ lineas: q.lineas.map((l) => (l.id === id ? { ...l, ...f(l) } : l)) }));
   const agregar = (categoria) => set((q) => ({
@@ -32,37 +53,25 @@ export default function Tripulacion({ p, set, calc }) {
     const copia = { ...structuredClone(l), id: crypto.randomUUID() };
     return { lineas: [...q.lineas.slice(0, i + 1), copia, ...q.lineas.slice(i + 1)] };
   });
+  // Sube o baja dentro del mismo bloque.
   const mover = (id, d) => set((q) => {
-    const ls = [...q.lineas]; const i = ls.findIndex((x) => x.id === id); const j = i + d;
+    const ls = [...q.lineas]; const i = ls.findIndex((x) => x.id === id);
+    const dep = CATEGORIA[ls[i].categoria]?.depto;
+    let j = i + d;
+    while (j >= 0 && j < ls.length && CATEGORIA[ls[j].categoria]?.depto !== dep) j += d;
     if (j < 0 || j >= ls.length) return {};
     [ls[i], ls[j]] = [ls[j], ls[i]]; return { lineas: ls };
   });
 
-  return (
-    <>
-      <div className="encabezado">
-        <div><h1>Tripulación.</h1><div className="filete" /></div>
-        <div className="agregar">
-          <SelectorPuesto valor={nuevo} onChange={setNuevo} />
-          <button onClick={() => agregar(nuevo)}>+ Agregar posición</button>
-        </div>
-      </div>
-      <p className="aviso">Primero armá la tripulación: puestos y cantidades. Los días y costos por persona salen de la configuración del proyecto (en gris);
-        se pueden cambiar en una posición. Los adicionales de cada posición se cargan en <a href={rutaAdicionales}>Adicionales</a>.</p>
+  const resumenDias = (l) => {
+    const dias = DIAS.map((d) => [d, l.dias?.[d.k] ?? p.defaults?.dias?.[d.k] ?? 0]).filter(([, v]) => v)
+      .map(([d, v]) => `${v} días ${d.label.toLowerCase()}`);
+    const ex = EXTRAS.filter((e) => (l.extras?.[e.k] ?? p.defaults?.extras?.[e.k])).map((e) => e.label.toLowerCase());
+    const propio = Object.values(l.dias ?? {}).some((v) => v !== undefined) || Object.values(l.extras ?? {}).some((v) => v !== undefined);
+    return `${[...dias, ...ex].join(' · ') || 'Sin días cargados'}${propio ? ' (propios de esta posición)' : ' (del proyecto)'}`;
+  };
 
-      {!p.lineas.length && (
-        <div className="vacio">
-          <p>Todavía no hay posiciones. Elegí un puesto arriba o empezá por los más comunes:</p>
-          <div className="fila-botones">
-            {['capitan-ultramar', '1-of-cubierta', 'jefe-maquina', '1-of-maquina', 'contramaestre', 'marinero', 'cocinero'].map((k) => (
-              <button key={k} className="secundario" onClick={() => agregar(k)}>+ {CATEGORIA[k].nombre}</button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="posiciones">
-        {p.lineas.map((l, i) => {
+  const tarjeta = (l, i) => {
           const x = porId[l.id];
           const esc = x?.escala;
           const n = Number(l.cantidad) || 0;
@@ -70,7 +79,7 @@ export default function Tripulacion({ p, set, calc }) {
             <article key={l.id} className="posicion">
               <header>
                 <span className="numero">{i + 1}</span>
-                <SelectorPuesto valor={l.categoria} onChange={(v) => setLinea(l.id, () => ({ categoria: v }))} />
+                <SelectorPuesto valor={l.categoria} depto={CATEGORIA[l.categoria]?.depto} onChange={(v) => setLinea(l.id, () => ({ categoria: v }))} />
                 <span className="cantidad">
                   <button className="secundario" onClick={() => setLinea(l.id, (q) => ({ cantidad: Math.max(0, (Number(q.cantidad) || 0) - 1) }))}>−</button>
                   <input className="num" type="number" min="0" value={l.cantidad} onChange={(e) => setLinea(l.id, () => ({ cantidad: Number(e.target.value) || 0 }))} />
@@ -97,26 +106,31 @@ export default function Tripulacion({ p, set, calc }) {
                     </div>
                   </div>
                   <div className="grupo-campos">
-                    <span className="etiqueta">Días por persona</span>
-                    <div className="mini-rejilla">
-                      {DIAS.map((d) => (
-                        <label key={d.k} className={l.dias?.[d.k] !== undefined ? 'propio' : ''}>{d.label}
-                          <Num valor={l.dias?.[d.k]} heredado={p.defaults?.dias?.[d.k] ?? 0} onChange={(v) => setLinea(l.id, (q) => ({ dias: { ...q.dias, [d.k]: v } }))} />
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="grupo-campos">
-                    <span className="etiqueta">Costos por persona</span>
-                    <div className="fila-botones" style={{ marginTop: 4 }}>
-                      {EXTRAS.map((e) => (
-                        <SiNo key={e.k} etiqueta={e.label} valor={l.extras?.[e.k]} heredado={p.defaults?.extras?.[e.k]}
-                          onChange={(v) => setLinea(l.id, (q) => ({ extras: { ...q.extras, [e.k]: v } }))} />
-                      ))}
-                    </div>
+                    <span className="etiqueta">Días y costos</span>
+                    <span className="ayuda">{resumenDias(l)}</span>
                   </div>
                   <details>
-                    <summary>Antigüedad y vacaciones propias</summary>
+                    <summary>Días, costos, antigüedad y vacaciones propios de esta posición</summary>
+                    <div className="grupo-campos">
+                      <span className="etiqueta">Días por persona</span>
+                      <div className="mini-rejilla">
+                        {DIAS.map((d) => (
+                          <label key={d.k} className={l.dias?.[d.k] !== undefined ? 'propio' : ''}>{d.label}
+                            <Num valor={l.dias?.[d.k]} heredado={p.defaults?.dias?.[d.k] ?? 0} onChange={(v) => setLinea(l.id, (q) => ({ dias: { ...q.dias, [d.k]: v } }))} />
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="grupo-campos">
+                      <span className="etiqueta">Costos por persona</span>
+                      <div className="fila-botones" style={{ marginTop: 4 }}>
+                        {EXTRAS.map((e) => (
+                          <SiNo key={e.k} etiqueta={e.label} valor={l.extras?.[e.k]} heredado={p.defaults?.extras?.[e.k]}
+                            onChange={(v) => setLinea(l.id, (q) => ({ extras: { ...q.extras, [e.k]: v } }))} />
+                        ))}
+                      </div>
+                    </div>
+                    <span className="etiqueta">Antigüedad y vacaciones</span>
                     <div className="mini-rejilla">
                       <label className={l.antiguedadAnios !== '' && l.antiguedadAnios !== undefined ? 'propio' : ''}>Antigüedad
                         <Num valor={l.antiguedadAnios === '' ? undefined : l.antiguedadAnios} heredado={calc.params.antiguedadAnios} unidad="años"
@@ -144,9 +158,39 @@ export default function Tripulacion({ p, set, calc }) {
                 </div>
               </div>
             </article>
-          );
-        })}
-      </div>
+    );
+  };
+
+  return (
+    <>
+      <div><h1>Tripulación.</h1><div className="filete" /></div>
+      <p className="aviso">Armá la tripulación por bloque: puestos y cantidades. Los días y costos por persona salen de la configuración del proyecto (en gris);
+        se pueden cambiar en una posición. Los adicionales de cada posición se cargan en <a href={rutaAdicionales}>Adicionales</a>.</p>
+
+      {DEPARTAMENTOS.map((d) => {
+        const ls = p.lineas.filter((l) => CATEGORIA[l.categoria]?.depto === d.clave);
+        const calcs = ls.map((l) => porId[l.id]).filter(Boolean);
+        const personas = ls.reduce((s, l) => s + (Number(l.cantidad) || 0), 0);
+        const diaUsd = calc.c.fx ? calcs.reduce((s, x) => s + x.r.unitarioDia.navegado * (Number(x.linea.cantidad) || 0), 0) / calc.c.fx : 0;
+        const total = calcs.reduce((s, x) => s + x.r.usd.total, 0);
+        return (
+          <section key={d.clave} className={`depto depto-${d.clave}`}>
+            <header className="depto-cabeza">
+              <div><h2>{d.nombre}</h2><span className="ayuda">{d.detalle}</span></div>
+              <div className="depto-cifras">
+                <span><span className="etiqueta">Personas</span><span className="mono">{fmt0(personas)}</span></span>
+                <span><span className="etiqueta">USD / día navegado</span><span className="mono">{calc.c.fx ? fmt(diaUsd) : '—'}</span></span>
+                <span><span className="etiqueta">Total USD</span><span className="mono">{calc.c.fx ? fmt(total) : '—'}</span></span>
+              </div>
+            </header>
+            <div className="posiciones">
+              {ls.map((l, k) => tarjeta(l, k))}
+              {!ls.length && <p className="aviso">Sin posiciones en {d.nombre.toLowerCase()}.</p>}
+            </div>
+            <Agregar depto={d.clave} agregar={agregar} />
+          </section>
+        );
+      })}
 
       {p.lineas.length > 0 && <div className="fila-botones"><a className="boton" href={rutaAdicionales}>Seguir con los adicionales →</a></div>}
       {p.lineas.length > 0 && (

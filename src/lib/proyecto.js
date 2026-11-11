@@ -3,6 +3,7 @@
 import { basicosVigentes, vigente, hoyMes } from './escalas.js';
 import { lineaCrewing, resumenCrewing } from './calculo.js';
 import { paramsCalculo } from './parametros.js';
+import { CATEGORIA, DEPARTAMENTOS } from './categorias.js';
 
 export const ADICIONALES = [
   { k: 'rj', label: 'Resp. jerárquica / plus operativo', corto: 'RJ / Plus op.' },
@@ -93,6 +94,9 @@ export function calcularProyecto(datos, p) {
     try { r = lineaCrewing({ linea, basico, p: pl, g, fx: c.fx, divisaDia: Number(div) || 0 }); } catch { /* datos incompletos */ }
     return { linea, original: linea0, r, basico, escala: c.basicos[linea.categoria], divisaDia: Number(div) || 0 };
   }).filter((x) => x.r);
+  // Cubierta, máquinas y cocina, respetando el orden dentro de cada bloque.
+  const orden = (x) => DEPARTAMENTOS.findIndex((d) => d.clave === CATEGORIA[x.linea.categoria]?.depto);
+  lineas.sort((a, b) => orden(a) - orden(b));
   const resumen = resumenCrewing(lineas, g);
   const navegadoDiaArs = lineas.reduce((s, x) => s + x.r.unitarioDia.navegado * (Number(x.linea.cantidad) || 0), 0);
   return { c, params, g, lineas, resumen, navegadoDiaArs, navegadoDiaUsd: c.fx ? navegadoDiaArs / c.fx : 0 };

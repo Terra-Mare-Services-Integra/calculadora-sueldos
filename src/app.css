@@ -223,3 +223,15 @@ table.tabla{ border-collapse:collapse; font-size:12px; width:100%; }
 .tabla-adicionales tr.masivo .fijo{ background:var(--tm-blue-050); display:flex; flex-direction:column; gap:4px; }
 .tabla-adicionales .aplicar{ display:block; padding:2px 0; min-height:22px; font-size:11px; color:var(--tm-blue); }
 .tabla-adicionales .aplicar:disabled{ color:var(--tm-blue-light); background:transparent; border-color:transparent; }
+.depto{ margin-top:28px; border:1px solid var(--border-subtle); border-top:4px solid var(--tm-blue); }
+.depto-maquinas{ border-top-color:var(--tm-blue-deep); }
+.depto-cocina{ border-top-color:var(--tm-blue-mid); }
+.depto-cabeza{ display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap; padding:14px 16px; background:var(--tm-surface); border-bottom:1px solid var(--border-subtle); }
+.depto-cabeza h2{ margin:0; }
+.depto-cifras{ display:flex; gap:24px; flex-wrap:wrap; }
+.depto-cifras > span{ display:flex; flex-direction:column; gap:2px; }
+.depto .posiciones{ padding:12px 16px 0; margin-top:0; }
+.depto .posiciones > .aviso{ margin:4px 0 0; }
+.agregar-bloque{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:12px 16px 16px; }
+button.chico{ min-height:30px; padding:4px 10px; font-size:12px; font-weight:500; }
+.agregar-bloque select{ min-height:30px; padding:3px 8px; font-size:12px; color:var(--tm-blue); }
