@@ -38,10 +38,9 @@ export const posicionNueva = (categoria = 'capitan-ultramar') => ({
 
 const definido = (v) => v !== undefined && v !== null && v !== '';
 
-/** Adicionales para una posición nueva: los de la última posición del mismo grupo (cubierta, máquinas…), si hay. */
-export function adicionalesSugeridos(p, categoria, grupoDe) {
-  const g = grupoDe(categoria);
-  const previa = [...p.lineas].reverse().find((l) => l.categoria === categoria) ?? [...p.lineas].reverse().find((l) => grupoDe(l.categoria) === g);
+/** Adicionales para una posición nueva: los de la última posición del mismo puesto, si hay (si no, van los predefinidos). */
+export function adicionalesSugeridos(p, categoria) {
+  const previa = [...p.lineas].reverse().find((l) => l.categoria === categoria);
   return previa ? { ...previa.a } : {};
 }
 

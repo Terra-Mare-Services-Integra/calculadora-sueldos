@@ -41,6 +41,13 @@ export const CAMPOS_GLOBALES = [
   { k: 'opcionesActa', label: 'Opciones Acta 04-08-22', tipo: 'lista', unidad: '% (separados por ;)' },
   { k: 'opcionesRegimenFranco', label: 'Opciones régimen de franco', tipo: 'lista', unidad: '% (separados por ;)' },
   { k: 'opcionesPrecioFranco', label: 'Opciones precio del franco', tipo: 'lista', unidad: '% (separados por ;)' },
+  { k: 'predefRj', label: 'Predefinido RJ / plus operativo', tipo: 'pct' },
+  { k: 'predefSupply', label: 'Predefinido supply / buque mayor', tipo: 'pct' },
+  { k: 'predefLocacion', label: 'Predefinido locación / buque gasero', tipo: 'pct' },
+  { k: 'predefActa', label: 'Predefinido Acta 04-08-22', tipo: 'pct' },
+  { k: 'predefRegimenFranco', label: 'Predefinido régimen de franco', tipo: 'pct' },
+  { k: 'predefPrecioFranco', label: 'Predefinido precio del franco', tipo: 'pct' },
+  { k: 'predefPrecioFrancoCapitan', label: 'Predefinido precio del franco de capitanes', tipo: 'pct' },
   { k: 'ayudaAdicionales', label: 'Ayuda de adicionales (texto que se muestra en Crewing)', tipo: 'texto' },
 ];
 
@@ -64,3 +71,14 @@ export function faltantes(valores) {
 
 /** Opciones sugeridas de cada adicional (de los parámetros vigentes). */
 export const opcionesDe = (globales, k) => globales?.[`opciones${k[0].toUpperCase()}${k.slice(1)}`] ?? [];
+
+/** Adicionales con que arranca una posición nueva (parámetros vigentes). Capitanes: precio del franco propio. */
+export function adicionalesPredefinidos(globales = {}, categoria = '') {
+  const capitan = /^(capitan|car-capitan)/.test(categoria);
+  const a = {
+    rj: globales.predefRj, supply: globales.predefSupply, locacion: globales.predefLocacion, acta: globales.predefActa,
+    regimenFranco: globales.predefRegimenFranco,
+    precioFranco: capitan && globales.predefPrecioFrancoCapitan != null ? globales.predefPrecioFrancoCapitan : globales.predefPrecioFranco,
+  };
+  return Object.fromEntries(Object.entries(a).filter(([, v]) => v != null));
+}

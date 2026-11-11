@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { CATEGORIAS_LIQUIDACION, CATEGORIA, DEPARTAMENTOS } from '../../lib/categorias.js';
 import { ADICIONALES, DIAS, EXTRAS, posicionNueva, adicionalesSugeridos } from '../../lib/proyecto.js';
-import { fmt, fmt0, fmtMes, fmtPct } from '../../lib/formato.js';
-import { Num, SiNo } from '../../componentes/Campos.jsx';
+import { fmt, fmt0, fmtMes } from '../../lib/formato.js';
+import { Num, SiNo, SelectorAdicional } from '../../componentes/Campos.jsx';
+import { opcionesDe, adicionalesPredefinidos } from '../../lib/parametros.js';
 
 // Puestos que se ofrecen con un clic en cada bloque (el resto, en la lista).
 const RAPIDOS = {
@@ -43,10 +44,13 @@ function Agregar({ depto, agregar }) {
 export default function Tripulacion({ p, set, calc }) {
   const porId = Object.fromEntries(calc.lineas.map((x) => [x.original.id, x]));
   const setLinea = (id, f) => set((q) => ({ lineas: q.lineas.map((l) => (l.id === id ? { ...l, ...f(l) } : l)) }));
-  const agregar = (categoria) => set((q) => ({
-    lineas: [...q.lineas, { ...posicionNueva(categoria), a: adicionalesSugeridos(q, categoria, (k) => CATEGORIA[k]?.grupo) }],
-  }));
-  const rutaAdicionales = `#${window.location.hash.slice(1).replace(/tripulacion$/, 'adicionales')}`;
+  const g = calc.c.valores?.globales ?? {};
+  // Una posición nueva copia los adicionales de la última del mismo puesto; si no hay, usa los predefinidos.
+  const agregar = (categoria) => set((q) => {
+    const previos = adicionalesSugeridos(q, categoria);
+    const a = Object.keys(previos).length ? previos : adicionalesPredefinidos(g, categoria);
+    return { lineas: [...q.lineas, { ...posicionNueva(categoria), a }] };
+  });
   const quitar = (id) => set((q) => ({ lineas: q.lineas.filter((l) => l.id !== id) }));
   const duplicar = (l) => set((q) => {
     const i = q.lineas.findIndex((x) => x.id === l.id);
@@ -97,13 +101,15 @@ export default function Tripulacion({ p, set, calc }) {
 
               <div className="posicion-cuerpo">
                 <div className="campos-posicion">
-                  <div className="grupo-campos">
-                    <span className="etiqueta">Adicionales</span>
-                    <div className="fila-chips">
-                      {ADICIONALES.filter((a) => l.a?.[a.k]).map((a) => <span key={a.k} className="chip">{a.corto} {fmtPct(l.a[a.k])}</span>)}
-                      {!ADICIONALES.some((a) => l.a?.[a.k]) && <span className="chip alerta">sin adicionales</span>}
-                      <a href={rutaAdicionales} className="ayuda">Editar</a>
-                    </div>
+                  <div className="adicionales-posicion">
+                    {ADICIONALES.map((ad) => (
+                      <label key={ad.k}>{ad.corto}
+                        <SelectorAdicional valor={l.a?.[ad.k]} opciones={opcionesDe(g, ad.k)}
+                          onChange={(v) => setLinea(l.id, (q) => ({ a: { ...q.a, [ad.k]: v } }))} />
+                      </label>
+                    ))}
+                    <button className="terciario predef" title="Volver a los valores predefinidos"
+                      onClick={() => setLinea(l.id, () => ({ a: adicionalesPredefinidos(g, l.categoria) }))}>Predefinidos</button>
                   </div>
                   <div className="grupo-campos">
                     <span className="etiqueta">Días y costos</span>
@@ -165,7 +171,8 @@ export default function Tripulacion({ p, set, calc }) {
     <>
       <div><h1>Tripulación.</h1><div className="filete" /></div>
       <p className="aviso">Armá la tripulación por bloque: puestos y cantidades. Los días y costos por persona salen de la configuración del proyecto (en gris);
-        se pueden cambiar en una posición. Los adicionales de cada posición se cargan en <a href={rutaAdicionales}>Adicionales</a>.</p>
+        se pueden cambiar en una posición. Cada posición arranca con los adicionales predefinidos (o los de la anterior del mismo puesto):
+        elegí otro de la lista o "Otro valor…" para escribirlo.</p>
 
       {DEPARTAMENTOS.map((d) => {
         const ls = p.lineas.filter((l) => CATEGORIA[l.categoria]?.depto === d.clave);
@@ -192,7 +199,6 @@ export default function Tripulacion({ p, set, calc }) {
         );
       })}
 
-      {p.lineas.length > 0 && <div className="fila-botones"><a className="boton" href={rutaAdicionales}>Seguir con los adicionales →</a></div>}
       {p.lineas.length > 0 && (
         <section className="bloque">
           <h3>Resumen de la tripulación</h3>

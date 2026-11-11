@@ -47,3 +47,30 @@ export function SiNo({ valor, onChange, heredado, etiqueta }) {
       onClick={() => onChange(!efectivo)}>{etiqueta}</button>
   );
 }
+
+/**
+ * Adicional: lista desplegable con los valores predefinidos y "Otro…" para escribirlo a mano.
+ * Un valor que no está en la lista se muestra como manual.
+ */
+export function SelectorAdicional({ valor, opciones = [], onChange }) {
+  const v = Number(valor) || 0;
+  const enLista = opciones.some((o) => Math.abs(o - v) < 1e-9);
+  const [manual, setManual] = useState(!enLista);
+  useEffect(() => { if (!enLista) setManual(true); }, [enLista]);
+  if (manual || !opciones.length) {
+    return (
+      <span className="adicional manual">
+        <Pct valor={v || undefined} onChange={(x) => onChange(x ?? 0)} ancho={58} />
+        {opciones.length > 0 && <button type="button" className="terciario volver-lista" title="Elegir de la lista"
+          onClick={() => { setManual(false); if (!enLista) onChange(opciones.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a), opciones[0])); }}>▾</button>}
+      </span>
+    );
+  }
+  return (
+    <select className="adicional" value={String(opciones.find((o) => Math.abs(o - v) < 1e-9) ?? 0)}
+      onChange={(e) => (e.target.value === 'otro' ? setManual(true) : onChange(Number(e.target.value)))}>
+      {opciones.map((o) => <option key={o} value={String(o)}>{String(Math.round(o * 1e6) / 1e4).replace('.', ',')} %</option>)}
+      <option value="otro">Otro valor…</option>
+    </select>
+  );
+}

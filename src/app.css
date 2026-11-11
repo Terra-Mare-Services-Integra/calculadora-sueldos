@@ -235,3 +235,11 @@ table.tabla{ border-collapse:collapse; font-size:12px; width:100%; }
 .agregar-bloque{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:12px 16px 16px; }
 button.chico{ min-height:30px; padding:4px 10px; font-size:12px; font-weight:500; }
 .agregar-bloque select{ min-height:30px; padding:3px 8px; font-size:12px; color:var(--tm-blue); }
+.adicionales-posicion{ display:grid; grid-template-columns:repeat(6, minmax(0, 1fr)) auto; gap:8px 10px; align-items:end; }
+.adicionales-posicion label{ font-size:11px; min-width:0; }
+.adicionales-posicion select.adicional{ width:100%; min-height:32px; padding:4px 6px; font-family:var(--font-mono); font-size:13px; }
+.adicional.manual{ display:flex; align-items:center; gap:2px; }
+.adicional.manual input{ border-color:var(--tm-blue); background:var(--tm-blue-050); }
+.volver-lista{ padding:2px 6px; min-height:28px; color:var(--tm-blue); }
+button.predef{ font-size:11px; padding:4px 6px; min-height:28px; color:var(--tm-blue); }
+@media (max-width: 1100px){ .adicionales-posicion{ grid-template-columns:repeat(3, minmax(0, 1fr)); } }
