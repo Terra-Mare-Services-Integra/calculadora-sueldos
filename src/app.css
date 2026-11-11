@@ -1,0 +1,82 @@
+/* TERRAMARE Design System: tokens y reglas básicas (radio 0, filete azul, Jost / Montserrat / IBM Plex Mono). */
+:root{
+  --tm-blue:#235C96; --tm-blue-deep:#213363; --tm-blue-mid:#6381A7; --tm-blue-light:#A5B5CC;
+  --tm-surface:#F4F6F9; --tm-ink:#101820; --tm-white:#fff;
+  --tm-blue-700:#1C4A79; --tm-blue-800:#173D64; --tm-blue-050:#E7EDF4;
+  --tm-critical:#B3261E;
+  --text-muted:#5B6672; --border-subtle:#E2E7EE;
+  --font-display:"Jost",system-ui,sans-serif; --font-body:"Montserrat",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{ box-sizing:border-box; }
+html,body{ margin:0; background:var(--tm-white); color:var(--tm-ink); font-family:var(--font-body); font-size:14px; line-height:1.5; }
+.mono{ font-family:var(--font-mono); }
+
+.barra{ display:flex; align-items:center; gap:24px; padding:12px 32px; border-top:8px solid var(--tm-blue); border-bottom:1px solid var(--border-subtle); }
+.barra img{ height:40px; }
+.barra-titulo{ font-size:13px; color:var(--text-muted); }
+
+.overline{ font-weight:600; font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--tm-blue); }
+
+main{ padding:24px 32px 48px; max-width:1600px; }
+h1{ font-family:var(--font-display); font-weight:400; font-size:32px; line-height:1.15; letter-spacing:-.01em; margin:0; }
+.periodo{ font-size:15px; font-weight:500; margin-top:4px; }
+.filete{ width:80px; height:4px; background:var(--tm-blue); margin-top:12px; }
+
+.encabezado{ display:flex; justify-content:space-between; align-items:flex-end; gap:24px; flex-wrap:wrap; }
+.campos, .fila{ display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; }
+
+label{ display:flex; flex-direction:column; gap:4px; font-size:12px; font-weight:600; color:var(--text-muted); }
+.etiqueta{ font-size:12px; font-weight:600; color:var(--text-muted); }
+
+/* ─── Calculadora de sueldos ─────────────────────────────────────────────── */
+.barra{ flex-wrap:wrap; }
+.barra-sub{ font-size:12px; color:var(--text-muted); }
+.volver-portal{ font-size:12px; color:var(--tm-blue); text-decoration:none; }
+.volver-portal:hover{ text-decoration:underline; }
+.usuario{ margin-left:auto; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted); }
+.vistas{ display:flex; gap:0; padding:0 32px; border-bottom:1px solid var(--border-subtle); overflow-x:auto; }
+.vista{ background:transparent; color:var(--text-muted); border:0; border-bottom:4px solid transparent; font-weight:500; white-space:nowrap; }
+.vista:hover{ background:var(--tm-blue-050); color:var(--tm-ink); border-color:transparent; border-bottom-color:transparent; }
+.vista.activa{ color:var(--tm-blue-deep); border-bottom-color:var(--tm-blue); }
+.contexto{ display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; padding:12px 32px; background:var(--tm-surface); border-bottom:1px solid var(--border-subtle); font-size:12px; }
+.contexto .dato{ display:flex; flex-direction:column; gap:2px; }
+.contexto .valor{ font-family:var(--font-mono); font-size:14px; color:var(--tm-ink); }
+section{ margin-top:32px; }
+h2{ font-family:var(--font-display); font-weight:400; font-size:22px; margin:0 0 8px; }
+h3{ font-size:14px; font-weight:600; margin:16px 0 8px; }
+.aviso{ font-size:13px; color:var(--text-muted); max-width:100ch; }
+.aviso.error{ color:var(--tm-critical); }
+.aviso.ok{ color:#1E7A5B; }
+.tabla-marco{ overflow-x:auto; border:1px solid var(--border-subtle); margin-top:8px; }
+table.tabla{ border-collapse:collapse; font-size:12px; width:100%; }
+.tabla th, .tabla td{ padding:5px 8px; border-bottom:1px solid var(--border-subtle); text-align:left; vertical-align:middle; }
+.tabla thead th{ font-weight:600; color:var(--text-muted); border-bottom:1px solid var(--tm-blue-light); background:var(--tm-white); position:sticky; top:0; }
+.tabla .n{ text-align:right; font-family:var(--font-mono); white-space:nowrap; }
+.tabla .fijo{ position:sticky; left:0; background:var(--tm-white); z-index:1; min-width:220px; }
+.tabla tr.subtotal td{ font-weight:600; background:var(--tm-surface); }
+.tabla tr.total td{ font-weight:600; background:var(--tm-blue-deep); color:var(--tm-white); }
+.tabla tr.seccion td{ font-weight:600; color:var(--tm-blue); padding-top:14px; letter-spacing:.06em; text-transform:uppercase; font-size:11px; }
+.tabla input, .tabla select{ min-height:28px; padding:3px 6px; font-size:12px; }
+.tabla input.num{ width:72px; text-align:right; font-family:var(--font-mono); }
+.tabla input.monto{ width:120px; text-align:right; font-family:var(--font-mono); }
+.chip{ display:inline-block; font-size:11px; padding:1px 6px; border:1px solid var(--tm-blue-light); color:var(--tm-blue); white-space:nowrap; }
+.chip.alerta{ border-color:#C97A16; color:#C97A16; }
+.chip.critico{ border-color:var(--tm-critical); color:var(--tm-critical); }
+.chip.ok{ border-color:#1E7A5B; color:#1E7A5B; }
+.tarjetas{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:12px; margin-top:12px; }
+.tarjeta{ background:var(--tm-surface); border:1px solid var(--border-subtle); padding:12px 16px; }
+.tarjeta.elegida{ border-color:var(--tm-blue); box-shadow:inset 0 -4px 0 var(--tm-blue); }
+.tarjeta .grande{ font-family:var(--font-mono); font-size:22px; color:var(--tm-ink); }
+.tarjeta button{ margin-top:8px; }
+details summary{ cursor:pointer; color:var(--tm-blue); font-size:12px; }
+pre.detalle{ font-size:11px; background:var(--tm-surface); padding:8px; overflow:auto; max-height:300px; white-space:pre-wrap; }
+.ingreso{ max-width:420px; margin:48px auto; padding:0 16px; }
+.ingreso form{ display:flex; flex-direction:column; gap:16px; margin:32px 0 16px; }
+.ayuda{ font-weight:400; font-size:11px; color:var(--text-muted); white-space:pre-line; }
+.fila-botones{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+.rejilla{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:12px; }
+@media (max-width: 700px){
+  main{ padding:16px; }
+  .vistas, .contexto, .barra{ padding-left:16px; padding-right:16px; }
+}
