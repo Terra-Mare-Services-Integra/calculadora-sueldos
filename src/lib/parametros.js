@@ -35,6 +35,12 @@ export const CAMPOS_GLOBALES = [
   { k: 'hospedaje', label: 'Hospedaje doméstico', tipo: 'monto', unidad: 'USD/persona (ida y vuelta = ×2)' },
   { k: 'lavanderia', label: 'Adicional lavandería', tipo: 'monto', unidad: 'USD/persona' },
   { k: 'epp', label: 'EPP', tipo: 'monto', unidad: 'USD/persona' },
+  { k: 'opcionesRj', label: 'Opciones RJ / plus operativo', tipo: 'lista', unidad: '% (separados por ;)' },
+  { k: 'opcionesSupply', label: 'Opciones supply / buque mayor', tipo: 'lista', unidad: '% (separados por ;)' },
+  { k: 'opcionesLocacion', label: 'Opciones locación / buque gasero', tipo: 'lista', unidad: '% (separados por ;)' },
+  { k: 'opcionesActa', label: 'Opciones Acta 04-08-22', tipo: 'lista', unidad: '% (separados por ;)' },
+  { k: 'opcionesRegimenFranco', label: 'Opciones régimen de franco', tipo: 'lista', unidad: '% (separados por ;)' },
+  { k: 'opcionesPrecioFranco', label: 'Opciones precio del franco', tipo: 'lista', unidad: '% (separados por ;)' },
   { k: 'ayudaAdicionales', label: 'Ayuda de adicionales (texto que se muestra en Crewing)', tipo: 'texto' },
 ];
 
@@ -55,3 +61,6 @@ export function faltantes(valores) {
   }
   return f;
 }
+
+/** Opciones sugeridas de cada adicional (de los parámetros vigentes). */
+export const opcionesDe = (globales, k) => globales?.[`opciones${k[0].toUpperCase()}${k.slice(1)}`] ?? [];

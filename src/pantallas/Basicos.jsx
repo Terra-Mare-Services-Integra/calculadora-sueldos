@@ -30,7 +30,10 @@ export default function Basicos({ ctx }) {
 function EscalaVigente({ ctx }) {
   return (
     <section>
-      <h2>Escala vigente en {fmtMes(ctx.mes)}</h2>
+      <div className="fila-botones" style={{ marginTop: 0, alignItems: 'flex-end' }}>
+        <h2 style={{ margin: 0 }}>Escala vigente en {fmtMes(ctx.mes)}</h2>
+        {ctx.setMes && <label>Ver otro mes<input type="month" value={ctx.mes} onChange={(e) => e.target.value && ctx.setMes(e.target.value)} /></label>}
+      </div>
       <div className="tabla-marco"><table className="tabla">
         <thead><tr><th className="fijo">Categoría</th><th className="n">Básico mensual</th><th>Origen</th><th>Acta</th><th>Mes del valor</th></tr></thead>
         <tbody>

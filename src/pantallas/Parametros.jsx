@@ -10,11 +10,16 @@ const aTexto = (c, v) => {
   if (c.tipo === 'pct') return fmt(v * 100).replace(/,00$/, '');
   if (c.tipo === 'tramos') return (v ?? []).map((t) => `${t.hasta ?? '+'}:${String(t.pct * 100).replace('.', ',')}`).join('; ');
   if (c.tipo === 'si-no') return v ? 'Si' : 'No';
+  if (c.tipo === 'lista') return (v ?? []).map((x) => fmt(x * 100).replace(/,00$/, '')).join('; ');
   return String(v);
 };
 const deTexto = (c, t) => {
   if (c.tipo === 'opcion' || c.tipo === 'texto') return t;
   if (c.tipo === 'si-no') return t === 'Si';
+  if (c.tipo === 'lista') {
+    const xs = String(t ?? '').split(';').map((s) => s.trim()).filter(Boolean).map(leerNumero);
+    return xs.some((x) => x == null) ? undefined : xs.map((x) => x / 100);
+  }
   if (c.tipo === 'tramos') {
     return String(t).split(';').map((s) => s.trim()).filter(Boolean).map((s) => {
       const [h, p] = s.split(':');
@@ -32,6 +37,7 @@ const mostrar = (c, v) => {
   if (c.tipo === 'tramos') return v.map((t) => `${t.hasta != null ? `≤ ${t.hasta} años` : 'más'}: ${fmt(t.pct * 100)} %`).join(' · ');
   if (c.tipo === 'opcion') return c.nombres?.[v] ?? v;
   if (c.tipo === 'texto') return <span className="ayuda">{v}</span>;
+  if (c.tipo === 'lista') return v.map((x) => `${fmt(x * 100).replace(/,00$/, '')} %`).join(' · ');
   return fmt(v);
 };
 
@@ -76,7 +82,7 @@ export default function Parametros({ ctx }) {
     if (c.tipo === 'opcion') return <select value={val} onChange={(e) => set(e.target.value)}><option value="" />{c.opciones.map((o) => <option key={o} value={o}>{c.nombres?.[o] ?? o}</option>)}</select>;
     if (c.tipo === 'si-no') return <select value={val} onChange={(e) => set(e.target.value)}><option>Si</option><option>No</option></select>;
     if (c.tipo === 'texto') return <textarea rows={4} style={{ width: '100%' }} value={val} onChange={(e) => set(e.target.value)} />;
-    return <input className={c.tipo === 'tramos' ? '' : 'num'} style={c.tipo === 'tramos' ? { width: 200 } : null} value={val} onChange={(e) => set(e.target.value)} />;
+    return <input className={c.tipo === 'tramos' || c.tipo === 'lista' ? '' : 'num'} style={c.tipo === 'tramos' || c.tipo === 'lista' ? { width: 260 } : null} value={val} onChange={(e) => set(e.target.value)} />;
   };
 
   return (

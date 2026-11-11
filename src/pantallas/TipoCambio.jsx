@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
 import { fmt, fmtFecha, leerNumero } from '../lib/formato.js';
 
@@ -10,7 +10,7 @@ export const TIPOS_TC = [
   ['manual', 'Manual'],
 ];
 
-export default function TipoCambio({ ctx }) {
+export default function TipoCambio({ ctx, embebido = false }) {
   const hoy = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
   const [fecha, setFecha] = useState(ctx.tc.fecha ?? hoy);
   const [res, setRes] = useState(ctx.tc.valores ? ctx.tc.valores : null);
@@ -28,18 +28,21 @@ export default function TipoCambio({ ctx }) {
       setError(msg); return;
     }
     setRes(data);
-    ctx.setTc({ ...ctx.tc, fecha, valores: data });
+    ctx.setTc({ tipo: 'divisa_venta', ...ctx.tc, fecha, valores: data });
   }
+  // En un proyecto nuevo se consulta sola la cotización de hoy.
+  useEffect(() => { if (embebido && !ctx.tc.valores && ctx.tc.tipo !== 'manual') consultar(false); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const usar = (tipo) => ctx.setTc({ ...ctx.tc, tipo, fecha, valores: res ?? ctx.tc.valores, manual });
 
   return (
     <>
-      <h1>Tipo de cambio USD.</h1>
-      <div className="filete" />
+      {!embebido && <><h1>Tipo de cambio USD.</h1>
+      <div className="filete" /></>}
       <p className="aviso">
         Elegí la fecha y la cotización que se usa para pasar los costos a dólares. Fuente: Banco Nación (histórico de divisa y billete, compra y venta);
         el BCRA (divisa vendedor) se muestra como control. Si la fecha no es hábil se toma el último día hábil anterior.
         Comercialmente se puede elegir una cotización más alta (o un valor manual) para bajar el precio en dólares de una propuesta.
+        {!embebido && ' Desde acá solo se consulta: el tipo de cambio de cada cotización se elige en la configuración del proyecto.'}
       </p>
       <div className="fila-botones">
         <label>Fecha<input type="date" max={hoy} value={fecha} onChange={(e) => setFecha(e.target.value)} /></label>
@@ -67,7 +70,7 @@ export default function TipoCambio({ ctx }) {
           </div>
         </>
       )}
-      <section>
+      <section style={embebido ? { marginTop: 16 } : null}>
         <h3>Valor manual</h3>
         <div className="fila-botones">
           <label>ARS por USD<input className="num" value={manual} onChange={(e) => setManual(e.target.value)} /></label>
