@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { supabase } from './lib/supabase.js';
 import { hoyMes } from './lib/escalas.js';
 import { CAMBIOS_LOGICA } from './lib/cambiosLogica.js';
-import { contextoCalculo } from './lib/proyecto.js';
+import { contextoCalculo, mesesConActa } from './lib/proyecto.js';
 import LogCambios from './pantallas/LogCambios.jsx';
 import Basicos from './pantallas/Basicos.jsx';
 import Parametros from './pantallas/Parametros.jsx';
@@ -116,7 +116,7 @@ function Calculadora({ email, ruta }) {
   const [acceso, setAcceso] = useState(undefined);
   const [datos, setDatos] = useState(null);
   const [error, setError] = useState(null);
-  const [mesEscalas, setMesEscalas] = useState(hoyMes());
+  const [mesElegido, setMesEscalas] = useState(null); // null = última escala publicada
   const [tcConsulta, setTcConsulta] = useState({ tipo: 'divisa_venta' });
 
   useEffect(() => {
@@ -144,7 +144,11 @@ function Calculadora({ email, ruta }) {
   }, [acceso, datos?.log, email, recargar]);
 
   const base = useMemo(() => (datos ? { datos, editor: acceso?.editor, email, recargar } : null), [datos, acceso, email, recargar]);
-  const ctxEscalas = useMemo(() => (base ? { ...base, ...contextoCalculo(datos, mesEscalas), setMes: setMesEscalas } : null), [base, datos, mesEscalas]);
+  const ultimaPublicada = datos ? mesesConActa(datos)[0] ?? hoyMes() : null;
+  const mesEscalas = mesElegido ?? ultimaPublicada;
+  const ctxEscalas = useMemo(() => (base ? {
+    ...base, ...contextoCalculo(datos, mesEscalas), setMes: setMesEscalas, ultimaPublicada, mesesConActa: mesesConActa(datos),
+  } : null), [base, datos, mesEscalas, ultimaPublicada]);
 
   if (acceso === undefined) return <main><p className="aviso">Cargando…</p></main>;
   if (acceso === null) return (

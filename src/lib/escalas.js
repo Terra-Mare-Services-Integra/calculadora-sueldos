@@ -35,7 +35,7 @@ export function basicosVigentes({ categorias = [], basicos = [], actas = [], ove
     if (c.forma === 'coef' && c.base) {
       const base = resolver(c.base, [...pila, clave]);
       r = { monto: base.monto * Number(c.coef || 0), mes: base.mes, acta: base.acta, provisoria: base.provisoria,
-            origen: `${Number(c.coef)} × ${c.base}` };
+            origen: 'coeficiente', coef: Number(c.coef), base: c.base };
     } else {
       const b = porCat[clave];
       r = b

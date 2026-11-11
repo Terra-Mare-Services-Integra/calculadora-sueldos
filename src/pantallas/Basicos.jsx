@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
 import { CATEGORIAS, CATEGORIA } from '../lib/categorias.js';
-import { mesDe, meses as rangoMeses } from '../lib/escalas.js';
+import { mesDe, hoyMes, meses as rangoMeses } from '../lib/escalas.js';
 import { fmt, fmtFecha, fmtMes, leerNumero } from '../lib/formato.js';
 
 const nombre = (k) => CATEGORIA[k]?.nombre ?? k;
@@ -14,7 +14,7 @@ export default function Basicos({ ctx }) {
       <div className="filete" />
       <p className="aviso">
         Las escalas se cargan por acta (FENA/FESIMAF suelen ser trimestrales y salir con atraso): cada monto tiene el mes desde el que rige.
-        Para cada mes se usa la última escala vigente de cada categoría; si el acta del mes todavía no salió, el valor queda marcado como provisorio.
+        Los proyectos usan la última escala publicada; si para una categoría no hay valor en ese mes, se toma el último que se cargó (se indica "desde").
       </p>
       <EscalaVigente ctx={ctx} />
       {editando
@@ -31,8 +31,14 @@ function EscalaVigente({ ctx }) {
   return (
     <section>
       <div className="fila-botones" style={{ marginTop: 0, alignItems: 'flex-end' }}>
-        <h2 style={{ margin: 0 }}>Escala vigente en {fmtMes(ctx.mes)}</h2>
-        {ctx.setMes && <label>Ver otro mes<input type="month" value={ctx.mes} onChange={(e) => e.target.value && ctx.setMes(e.target.value)} /></label>}
+        <h2 style={{ margin: 0 }}>Escala de {fmtMes(ctx.mes)}{ctx.mes === ctx.ultimaPublicada ? ' · última publicada' : ''}</h2>
+        {ctx.setMes && ctx.mesesConActa && (
+          <label>Ver otro mes
+            <select value={ctx.mes} onChange={(e) => ctx.setMes(e.target.value === ctx.ultimaPublicada ? null : e.target.value)}>
+              {ctx.mesesConActa.map((m) => <option key={m} value={m}>{fmtMes(m)}{m === ctx.ultimaPublicada ? ' (última publicada)' : ''}</option>)}
+            </select>
+          </label>
+        )}
       </div>
       <div className="tabla-marco"><table className="tabla">
         <thead><tr><th className="fijo">Categoría</th><th className="n">Básico mensual</th><th>Origen</th><th>Acta</th><th>Mes del valor</th></tr></thead>
@@ -46,8 +52,9 @@ function EscalaVigente({ ctx }) {
                 <td>
                   {b.override ? <span className="chip critico" title={b.override.motivo}>override manual (acta: {fmt(b.montoActa)})</span>
                     : b.origen === 'sin cargar' ? <span className="chip alerta">sin cargar</span>
-                    : <span className="chip">{b.origen === 'acta' ? 'acta' : b.origen}</span>}
-                  {' '}{b.provisoria && b.monto > 0 && !b.override && <span className="chip alerta">provisorio</span>}
+                    : b.origen === 'coeficiente' ? <span className="chip" title="Coeficiente sobre otra categoría">{fmt(b.coef * 100).replace(/,00$/, '')} % de {nombre(b.base)}</span>
+                    : <span className="chip">{b.origen}</span>}
+                  {' '}{b.provisoria && b.monto > 0 && !b.override && b.mes && <span className="chip" title="La última vez que se cargó un valor para esta categoría">desde {fmtMes(b.mes)}</span>}
                 </td>
                 <td>{b.acta ?? '—'}</td>
                 <td>{fmtMes(b.mes)}</td>
@@ -111,7 +118,9 @@ function ActaEditor({ ctx, acta, cerrar }) {
     return { ms, val };
   }, [acta, ctx.datos.basicos]);
   const [cab, setCab] = useState({ nombre: acta?.nombre ?? '', firmada_el: acta?.firmada_el ?? '', notas: acta?.notas ?? '' });
-  const [ms, setMs] = useState(inicial.ms.length ? inicial.ms : [ctx.mes]);
+  // Acta nueva: arranca en el mes siguiente a la última escala publicada.
+  const siguiente = (() => { const [y, m] = (ctx.ultimaPublicada ?? hoyMes()).split('-').map(Number); return new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 7); })();
+  const [ms, setMs] = useState(inicial.ms.length ? inicial.ms : [siguiente]);
   const [val, setVal] = useState(inicial.val);
   const [nuevoMes, setNuevoMes] = useState('');
   const [aviso, setAviso] = useState(null);
@@ -201,7 +210,7 @@ function ActaEditor({ ctx, acta, cerrar }) {
 }
 
 function Overrides({ ctx }) {
-  const [f, setF] = useState({ categoria: 'jefe-maquina', monto: '', desde: ctx.mes, hasta: '', motivo: '' });
+  const [f, setF] = useState({ categoria: 'jefe-maquina', monto: '', desde: hoyMes(), hasta: '', motivo: '' });
   const [aviso, setAviso] = useState(null);
   async function agregar(e) {
     e.preventDefault();
