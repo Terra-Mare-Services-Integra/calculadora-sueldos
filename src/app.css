@@ -294,3 +294,4 @@ tr.detalle-linea td{ background:var(--tm-surface); padding:10px 12px; }
 .totales-tripulacion .total{ margin-left:auto; }
 .totales-tripulacion .total b{ font-size:18px; color:var(--tm-blue-deep); }
 select.alcance{ margin-top:4px; max-width:240px; }
+.separador-vertical{ width:1px; align-self:stretch; background:var(--tm-blue-light); margin:0 4px; }

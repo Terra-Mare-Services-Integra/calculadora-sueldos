@@ -3,7 +3,6 @@ import { CAMPOS_REGIMEN, AJUSTABLES_CREWING } from '../../lib/parametros.js';
 import { DIAS, EXTRAS, opcionInicial } from '../../lib/proyecto.js';
 import { CATEGORIA } from '../../lib/categorias.js';
 import CatalogoAdicionales from '../../componentes/CatalogoAdicionales.jsx';
-import { hoyMes } from '../../lib/escalas.js';
 import { fmt, fmtMes, fmtPct } from '../../lib/formato.js';
 import { Pct, Num, SiNo } from '../../componentes/Campos.jsx';
 import TipoCambio from '../TipoCambio.jsx';
@@ -34,29 +33,16 @@ export default function Configuracion({ ctx, p, set, calc }) {
       </section>
 
       <section className="bloque">
-        <h3>Escala salarial</h3>
-        <div className="fila-botones" style={{ marginTop: 0 }}>
-          <label>Mes de la escala
-            <select value={p.mes ? 'fijo' : 'actual'} onChange={(e) => set({ mes: e.target.value === 'actual' ? null : hoyMes() })}>
-              <option value="actual">Actual: siempre la última vigente</option>
-              <option value="fijo">Un mes en particular</option>
-            </select>
-          </label>
-          {p.mes && <label>Mes<input type="month" value={p.mes} onChange={(e) => e.target.value && set({ mes: e.target.value })} /></label>}
-          <span className="aviso">Se usa {fmtMes(calc.c.mes)}. Los parámetros de cálculo vigentes rigen desde {calc.c.parametros?.vigente_desde ?? '—'}.</span>
-        </div>
-      </section>
-
-      <section className="bloque">
         <h3>Tipo de cambio</h3>
         <TipoCambio embebido ctx={{ tc: p.tc ?? {}, setTc: (tc) => set({ tc }) }} />
       </section>
 
       <section className="bloque">
         <h3>Condiciones del régimen</h3>
-        <p className="aviso">Vacío = el valor de los parámetros vigentes (en gris). Lo que cambies vale solo para este proyecto.</p>
+        <p className="aviso">Vacío = el valor de los parámetros vigentes (en gris). Lo que cambies vale solo para este proyecto.
+          La escala salarial y el Decreto 633/2018 se eligen arriba de la tripulación.</p>
         <div className="rejilla">
-          {CAMPOS_REGIMEN.filter((c) => AJUSTABLES_CREWING.includes(c.k)).map((c) => {
+          {CAMPOS_REGIMEN.filter((c) => AJUSTABLES_CREWING.includes(c.k) && c.k !== 'decreto633').map((c) => {
             const aj = p.ajustes?.[c.k];
             const b = base[c.k];
             return (

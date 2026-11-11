@@ -156,6 +156,18 @@ export function contextoCalculo(datos, mes = hoyMes(), tc = {}) {
   return { mes, parametros, valores: parametros?.valores ?? {}, divisasFila, divisas: divisasFila?.valores ?? {}, basicos, fx, tc };
 }
 
+/** Escala que efectivamente se aplica: el mes y las actas de los básicos usados (no el mes pedido). */
+export function escalaEnUso(basicos, claves) {
+  const xs = claves.map((k) => basicos[k]).filter((b) => b?.monto && b.mes);
+  const mes = xs.reduce((m, b) => (b.mes > m ? b.mes : m), '');
+  const deEseMes = xs.filter((b) => b.mes === mes && b.acta);
+  const acta = deEseMes[0]?.acta ?? null;
+  return { mes: mes || null, acta, overrides: xs.filter((b) => b.override).length };
+}
+
+/** Meses con básicos cargados en alguna acta (para elegir una escala puntual). */
+export const mesesConActa = (datos) => [...new Set((datos.basicos ?? []).map((b) => String(b.mes).slice(0, 7)))].sort().reverse();
+
 /** Calcula todas las posiciones del proyecto. */
 export function calcularProyecto(datos, p) {
   const c = contextoCalculo(datos, p.mes || hoyMes(), p.tc);
@@ -175,5 +187,7 @@ export function calcularProyecto(datos, p) {
   lineas.sort((a, b) => orden(a) - orden(b));
   const resumen = resumenCrewing(lineas, g);
   const navegadoDiaArs = lineas.reduce((s, x) => s + x.r.unitarioDia.navegado * (Number(x.linea.cantidad) || 0), 0);
-  return { c, params, g, lineas, resumen, catalogo: datos.adicionales ?? [], navegadoDiaArs, navegadoDiaUsd: c.fx ? navegadoDiaArs / c.fx : 0 };
+  const claves = p.lineas.length ? [...new Set(p.lineas.map((l) => l.categoria))] : ['jefe-maquina'];
+  const escala = escalaEnUso(c.basicos, claves);
+  return { c, params, g, lineas, resumen, escala, catalogo: datos.adicionales ?? [], navegadoDiaArs, navegadoDiaUsd: c.fx ? navegadoDiaArs / c.fx : 0 };
 }

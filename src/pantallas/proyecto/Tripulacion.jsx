@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react';
 import { CATEGORIAS_LIQUIDACION, CATEGORIA, DEPARTAMENTOS } from '../../lib/categorias.js';
-import { DIAS, EXTRAS, FRANCOS, posicionNueva, adicionalesIniciales, opcionInicial, alcanceDe } from '../../lib/proyecto.js';
+import { DIAS, EXTRAS, FRANCOS, posicionNueva, adicionalesIniciales, opcionInicial, alcanceDe, mesesConActa } from '../../lib/proyecto.js';
 import { fmt, fmt0, fmtMes } from '../../lib/formato.js';
 import { Num, SiNo, SelectorOpcion } from '../../componentes/Campos.jsx';
 import { opcionesDe, adicionalesPredefinidos } from '../../lib/parametros.js';
@@ -32,7 +32,7 @@ function SelectorPuesto({ valor, onChange, depto }) {
   );
 }
 
-export default function Tripulacion({ p, set, calc }) {
+export default function Tripulacion({ ctx, p, set, calc }) {
   const [abierta, setAbierta] = useState(null);
   const g = calc.c.valores?.globales ?? {};
   const catalogo = calc.catalogo;
@@ -83,16 +83,35 @@ export default function Tripulacion({ p, set, calc }) {
         <span className="aviso">Una línea por puesto. Lo que es igual para todos se elige arriba; en cada línea, lo que cambia por puesto.</span>
       </div>
 
-      {comunes.length > 0 && (
-        <div className="barra-comunes">
-          <span className="etiqueta">Para toda la tripulación</span>
+      <div className="barra-comunes">
+        <span className="etiqueta">Para toda la tripulación</span>
+        <label>Escala salarial
+          <select className="adicional" value={p.mes ?? ''} onChange={(e) => set({ mes: e.target.value || null })}>
+            <option value="">{`Última publicada${calc.escala.mes && !p.mes ? ` · ${fmtMes(calc.escala.mes)}` : ''}`}</option>
+            {mesesConActa(ctx.datos).map((m) => <option key={m} value={m}>{fmtMes(m)}</option>)}
+          </select>
+        </label>
+        <label>Decreto 633/2018
+          <select className="adicional" value={p.ajustes?.decreto633 === undefined ? '' : p.ajustes.decreto633 ? 'si' : 'no'}
+            onChange={(e) => set((q) => ({ ajustes: { ...q.ajustes, decreto633: e.target.value === '' ? undefined : e.target.value === 'si' } }))}>
+            <option value="">{`${calc.c.valores?.[p.regimen]?.decreto633 ? 'Sí' : 'No'} (según el régimen)`}</option>
+            <option value="si">Sí</option><option value="no">No</option>
+          </select>
+        </label>
+        {comunes.length > 0 && <span className="separador-vertical" />}
           {comunes.map((c) => (
             <label key={c.id}>{nombreCorto(c.nombre)}
               <SelectorOpcion opciones={c.opciones} sel={p.adProyecto?.[c.id] ?? opcionInicial(c, '', grupoDe)}
                 onChange={(sel) => set((q) => ({ adProyecto: { ...q.adProyecto, [c.id]: sel } }))} />
             </label>
           ))}
-        </div>
+      </div>
+      {calc.escala.mes && (
+        <p className="ayuda" style={{ marginTop: 4 }}>
+          Básicos de {fmtMes(calc.escala.mes)}{calc.escala.acta ? ` (${calc.escala.acta})` : ''}
+          {!p.mes && calc.escala.mes < calc.c.mes ? `: todavía no hay acta para ${fmtMes(calc.c.mes)}, se usa la última publicada.` : '.'}
+          {calc.escala.overrides ? ` ${calc.escala.overrides} con override manual.` : ''}
+        </p>
       )}
 
       {DEPARTAMENTOS.map((d) => {

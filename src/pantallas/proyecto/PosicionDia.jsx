@@ -43,7 +43,7 @@ export default function PosicionDia({ p, set, calc }) {
           <thead><tr><th>Concepto</th><th className="n">%</th><th className="n">Valor base</th><th>Unidad</th><th>Comentario</th></tr></thead>
           <tbody>
             <tr><td>Crew</td><td className="n">100</td><td className="n">{fmt(jdm?.monto)}</td><td>Índice</td>
-              <td>SBJm0: básico Jefe de Máquina vigente en {fmtMes(calc.c.mes)}{jdm?.acta ? ` (${jdm.acta})` : ''}</td></tr>
+              <td>SBJm0: básico Jefe de Máquina, escala {fmtMes(jdm?.mes)}{jdm?.acta ? ` (${jdm.acta})` : ''}</td></tr>
             <tr><td>Management fee</td><td className="n">100</td><td className="n">{fmt(Number(p.managementFee) || 0)}</td><td>USD/día</td><td>Fijo en USD</td></tr>
             <tr><td>Exchange rate</td><td className="n" /><td className="n">{fmt(calc.c.fx)}</td><td>ARS / USD</td><td>TC0: {tc}{p.tc?.fecha ? ` del ${p.tc.fecha}` : ''}</td></tr>
           </tbody>

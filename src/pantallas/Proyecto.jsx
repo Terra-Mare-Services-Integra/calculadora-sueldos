@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabase.js';
 import { REGIMEN } from '../lib/categorias.js';
 import { proyectoNuevo, calcularProyecto, migrarProyecto, migrarACatalogo, completarAdProyecto } from '../lib/proyecto.js';
 import { fmt, fmt0, fmtMes } from '../lib/formato.js';
-import { hoyMes } from '../lib/escalas.js';
 import Configuracion from './proyecto/Configuracion.jsx';
 import Tripulacion from './proyecto/Tripulacion.jsx';
 import PosicionDia from './proyecto/PosicionDia.jsx';
@@ -25,7 +24,7 @@ export default function Proyecto({ ctx, id, seccion }) {
 
   useEffect(() => {
     supabase.from('cs_crewing').select('*').eq('id', id).single().then(({ data, error: e }) => {
-      if (e) { setError(e.message); return; }
+      if (e || !data) { setError(e?.message ?? 'El proyecto no existe o no tenés acceso.'); return; }
       setFila(data);
       const base = { ...proyectoNuevo({ nombre: data.nombre, regimen: 'terramare' }), adicionales: undefined, ...data.datos, nombre: data.nombre };
       setP(completarAdProyecto(migrarACatalogo(migrarProyecto(base), ctx.datos.adicionales), ctx.datos.adicionales));
@@ -76,7 +75,6 @@ export default function Proyecto({ ctx, id, seccion }) {
   if (sinBasico) avisos.push(['tripulacion', `${sinBasico} posiciones sin básico cargado`]);
   if (!p.lineas.length) avisos.push(['tripulacion', 'Agregá las posiciones']);
   if (!p.adicionales?.length) avisos.push(['configuracion', 'Elegí los adicionales del proyecto']);
-  const provisoria = p.lineas.some((l) => calc.c.basicos[l.categoria]?.provisoria);
 
   const props = { ctx, p, set, calc };
   return (
@@ -99,7 +97,7 @@ export default function Proyecto({ ctx, id, seccion }) {
           <div><span className="etiqueta">Personas</span><span className="mono">{fmt0(calc.resumen.personas)}</span></div>
           <div><span className="etiqueta">Costo por día navegado</span><span className="mono">{calc.c.fx ? `USD ${fmt(calc.navegadoDiaUsd)}` : '—'}</span></div>
           <div><span className="etiqueta">Total del proyecto</span><span className="mono grande">{calc.c.fx ? `USD ${fmt(calc.resumen.usd.total ?? 0)}` : '—'}</span></div>
-          <div className="ayuda">Escala {fmtMes(p.mes || hoyMes())}{provisoria ? ' (provisoria)' : ''} · TC {calc.c.fx ? fmt(calc.c.fx) : '—'}</div>
+          <div className="ayuda">Escala {calc.escala.mes ? fmtMes(calc.escala.mes) : '—'}{p.mes ? '' : ' (última publicada)'} · TC {calc.c.fx ? fmt(calc.c.fx) : '—'}</div>
         </div>
         {avisos.length > 0 && (
           <ul className="avisos-lateral">
