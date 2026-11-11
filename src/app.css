@@ -295,3 +295,79 @@ tr.detalle-linea td{ background:var(--tm-surface); padding:10px 12px; }
 .totales-tripulacion .total b{ font-size:18px; color:var(--tm-blue-deep); }
 select.alcance{ margin-top:4px; max-width:240px; }
 .separador-vertical{ width:1px; align-self:stretch; background:var(--tm-blue-light); margin:0 4px; }
+
+/* ─── Oferta (documento A4) ─────────────────────────────────────────────── */
+.rejilla-textos{ display:flex; flex-direction:column; gap:12px; max-width:900px; }
+.rejilla-textos textarea{ width:100%; }
+.oferta-vista{ position:fixed; inset:0; z-index:50; background:#6b7480; overflow:auto; padding:64px 0 40px; }
+.oferta-barra{ position:fixed; top:0; left:0; right:0; z-index:51; display:flex; gap:12px; align-items:center; padding:10px 16px; background:var(--tm-white); border-bottom:1px solid var(--border-subtle); }
+.oferta-documento{ display:flex; flex-direction:column; align-items:center; gap:24px; }
+.hoja{ width:210mm; height:297mm; overflow:hidden; background:#fff; color:var(--tm-ink); position:relative; display:flex; flex-direction:column; box-shadow:0 2px 12px rgba(0,0,0,.25);
+  font-size:9pt; line-height:1.4; }
+.hoja-cabeza{ display:flex; justify-content:space-between; align-items:center; padding:7mm 15mm 4mm; border-top:3mm solid var(--tm-blue); border-bottom:1px solid var(--border-subtle); }
+.hoja-cabeza img{ height:9mm; }
+.hoja-direccion{ text-align:right; font-size:8pt; color:var(--text-muted); }
+.hoja-direccion b{ color:var(--tm-ink); }
+.hoja-encabezado-corto{ font-size:8.5pt; letter-spacing:.18em; color:var(--tm-blue); font-weight:600; }
+.hoja-cuerpo{ padding:6mm 15mm 0; margin-bottom:14mm; flex:1; min-height:0; overflow:hidden; }
+.hoja-cuerpo p{ margin:0 0 2.2mm; }
+.hoja-pie{ position:absolute; left:0; right:0; bottom:0; display:flex; justify-content:space-between; padding:3mm 15mm; background:var(--tm-blue-deep); color:#fff;
+  font-size:8pt; letter-spacing:.12em; }
+.hoja .overline{ font-size:8.5pt; }
+.hoja-titulo{ display:flex; justify-content:space-between; align-items:flex-end; gap:8mm; }
+.hoja-titulo h1{ font-size:22pt; margin:1mm 0 0; }
+.hoja-fecha{ color:var(--tm-blue-mid); font-size:10pt; white-space:nowrap; }
+.destinatario{ display:grid; grid-template-columns:16mm 1fr; gap:0.5mm 3mm; margin:4mm 0 3mm; align-items:baseline; }
+.etiqueta-doc{ font-size:7.5pt; font-weight:600; letter-spacing:.16em; color:var(--tm-blue); text-transform:uppercase; }
+.gris{ color:var(--text-muted); }
+.azul{ color:var(--tm-blue); }
+.datos-buque{ display:grid; grid-template-columns:repeat(4, 1fr); border:1px solid var(--border-subtle); background:var(--tm-surface); margin:3mm 0; }
+.datos-buque > div{ display:flex; flex-direction:column; gap:0.5mm; padding:2mm 3mm; border-right:1px solid var(--border-subtle); }
+.datos-buque > div:last-child{ border-right:0; }
+.hoja h4{ font-size:8pt; letter-spacing:.16em; color:var(--tm-blue); margin:3.5mm 0 1.5mm; }
+.tabla-doc{ width:100%; border-collapse:collapse; font-size:8pt; margin:1.5mm 0; }
+.tabla-doc th{ background:var(--tm-blue-deep); color:#fff; text-align:left; padding:1.5mm 2.5mm; font-weight:600; line-height:1.2; }
+.tabla-doc td{ padding:1mm 2.5mm; border-bottom:1px solid var(--border-subtle); line-height:1.25; }
+.tabla-doc .n{ text-align:right; }
+.tabla-doc .c{ text-align:center; }
+.tabla-doc tfoot td{ font-weight:700; border-top:2px solid var(--tm-blue); border-bottom:0; background:var(--tm-surface); }
+.nota-doc{ font-size:7.5pt; color:var(--text-muted); }
+.firma{ margin-top:3mm; }
+.firma p{ margin-bottom:2mm; }
+.numero-seccion{ font-family:var(--font-mono); color:var(--tm-blue); font-size:10pt; }
+.titulo-seccion{ font-size:19pt; margin:0.5mm 0 0; }
+.subtitulo-doc{ font-size:10pt; letter-spacing:0; text-transform:none; color:var(--tm-ink); margin:3mm 0 1.5mm; }
+.fx-doc{ display:flex; justify-content:flex-end; margin:1mm 0 3mm; }
+.fx-doc span{ padding:1mm 3mm; border:1px solid var(--border-subtle); }
+.fx-doc span:first-child{ background:var(--tm-blue-deep); color:#fff; font-weight:600; }
+.precio-doc{ display:grid; grid-template-columns:62mm 1fr; gap:6mm; align-items:start; }
+.total-dia{ border:1px solid var(--border-subtle); display:flex; flex-direction:column; }
+.total-dia > .etiqueta-doc{ padding:3mm 4mm 1mm; }
+.total-dia > div{ display:flex; justify-content:space-between; padding:1mm 4mm; }
+.total-dia .total-dia-final{ background:var(--tm-blue-deep); color:#fff; font-weight:700; padding:2.5mm 4mm; margin-top:1.5mm; font-size:10pt; }
+.tabla-doc.estructura{ margin:0; }
+.opcional-doc{ background:var(--tm-surface); border:1px solid var(--border-subtle); padding:2.5mm 4mm; margin:4mm 0 3mm; }
+.opcional-doc p{ margin:1mm 0 0; }
+
+@page{ size:A4; margin:0; }
+@media print{
+  body > #root{ display:none; }
+  .oferta-vista{ position:static; background:#fff; padding:0; overflow:visible; }
+  .oferta-barra{ display:none; }
+  html, body{ margin:0; padding:0; height:auto; min-height:0; }
+  .oferta-documento{ display:block; }
+  .hoja{ height:296.5mm; margin:0; }
+  .hoja{ box-shadow:none; page-break-after:always; break-after:page; page-break-inside:avoid;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .hoja:last-child{ page-break-after:auto; break-after:auto; }
+}
+
+.filete-doc{ width:22mm; height:1mm; background:var(--tm-blue); margin:2mm 0 3mm; }
+.hoja .filete{ width:22mm; height:1mm; margin-top:2mm; }
+.tabla-doc td:first-child{ min-width:70mm; }
+.tabla-doc.estructura td:first-child{ min-width:0; }
+.tabla-doc.estructura{ table-layout:auto; }
+.tabla-doc.estructura td, .tabla-doc.estructura th{ padding:1mm 2mm; }
+.precio-doc{ grid-template-columns:58mm minmax(0, 1fr); }
+.total-dia-final span:last-child{ white-space:nowrap; }
+.hoja.desborda{ outline:3px solid var(--tm-critical); }
