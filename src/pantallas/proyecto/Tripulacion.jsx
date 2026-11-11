@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { CATEGORIAS_LIQUIDACION, CATEGORIA, DEPARTAMENTOS } from '../../lib/categorias.js';
-import { ADICIONALES, DIAS, EXTRAS, posicionNueva, adicionalesSugeridos } from '../../lib/proyecto.js';
+import { DIAS, EXTRAS, FRANCOS, posicionNueva, adicionalesIniciales, opcionInicial } from '../../lib/proyecto.js';
 import { fmt, fmt0, fmtMes } from '../../lib/formato.js';
-import { Num, SiNo, SelectorAdicional } from '../../componentes/Campos.jsx';
+import { Num, SiNo, SelectorOpcion } from '../../componentes/Campos.jsx';
 import { opcionesDe, adicionalesPredefinidos } from '../../lib/parametros.js';
 
 // Puestos que se ofrecen con un clic en cada bloque (el resto, en la lista).
@@ -45,12 +45,29 @@ export default function Tripulacion({ p, set, calc }) {
   const porId = Object.fromEntries(calc.lineas.map((x) => [x.original.id, x]));
   const setLinea = (id, f) => set((q) => ({ lineas: q.lineas.map((l) => (l.id === id ? { ...l, ...f(l) } : l)) }));
   const g = calc.c.valores?.globales ?? {};
-  // Una posición nueva copia los adicionales de la última del mismo puesto; si no hay, usa los predefinidos.
+  const catalogo = calc.catalogo;
+  const grupoDe = (k) => CATEGORIA[k]?.grupo;
+  const francosPredef = (categoria) => {
+    const pre = adicionalesPredefinidos(g, categoria);
+    return { regimenFranco: pre.regimenFranco, precioFranco: pre.precioFranco };
+  };
+  // Una posición nueva copia los adicionales de la última del mismo puesto; si no hay, toma los preseleccionados.
   const agregar = (categoria) => set((q) => {
-    const previos = adicionalesSugeridos(q, categoria);
-    const a = Object.keys(previos).length ? previos : adicionalesPredefinidos(g, categoria);
-    return { lineas: [...q.lineas, { ...posicionNueva(categoria), a }] };
+    const previa = [...q.lineas].reverse().find((l) => l.categoria === categoria);
+    const ad = previa ? structuredClone(previa.ad ?? {}) : adicionalesIniciales(catalogo, q.adicionales ?? [], categoria, grupoDe);
+    const a = previa ? { ...previa.a } : francosPredef(categoria);
+    return { lineas: [...q.lineas, { ...posicionNueva(categoria), ad, a }] };
   });
+  const predefinidos = (l) => setLinea(l.id, () => ({
+    ad: adicionalesIniciales(catalogo, p.adicionales ?? [], l.categoria, grupoDe), a: francosPredef(l.categoria),
+  }));
+  const opcionesFranco = (k) => opcionesDe(g, k).map((v) => ({ nombre: '', valor: v }));
+  const selFranco = (l, k) => {
+    const ops = opcionesDe(g, k);
+    const v = Number(l.a?.[k]) || 0;
+    const i = ops.findIndex((o) => Math.abs(o - v) < 1e-9);
+    return { i: i >= 0 ? i : null, valor: v };
+  };
   const quitar = (id) => set((q) => ({ lineas: q.lineas.filter((l) => l.id !== id) }));
   const duplicar = (l) => set((q) => {
     const i = q.lineas.findIndex((x) => x.id === l.id);
@@ -102,14 +119,19 @@ export default function Tripulacion({ p, set, calc }) {
               <div className="posicion-cuerpo">
                 <div className="campos-posicion">
                   <div className="adicionales-posicion">
-                    {ADICIONALES.map((ad) => (
-                      <label key={ad.k}>{ad.corto}
-                        <SelectorAdicional valor={l.a?.[ad.k]} opciones={opcionesDe(g, ad.k)}
-                          onChange={(v) => setLinea(l.id, (q) => ({ a: { ...q.a, [ad.k]: v } }))} />
+                    {(p.adicionales ?? []).map((id) => catalogo.find((c) => c.id === id)).filter(Boolean).map((c) => (
+                      <label key={c.id}>{c.nombre}
+                        <SelectorOpcion opciones={c.opciones} sel={l.ad?.[c.id] ?? opcionInicial(c, l.categoria, grupoDe)}
+                          onChange={(sel) => setLinea(l.id, (q) => ({ ad: { ...q.ad, [c.id]: sel } }))} />
                       </label>
                     ))}
-                    <button className="terciario predef" title="Volver a los valores predefinidos"
-                      onClick={() => setLinea(l.id, () => ({ a: adicionalesPredefinidos(g, l.categoria) }))}>Predefinidos</button>
+                    {FRANCOS.map((f) => (
+                      <label key={f.k}>{f.label}
+                        <SelectorOpcion opciones={opcionesFranco(f.k)} sel={selFranco(l, f.k)}
+                          onChange={(sel) => setLinea(l.id, (q) => ({ a: { ...q.a, [f.k]: sel.valor } }))} />
+                      </label>
+                    ))}
+                    <button className="terciario predef" title="Volver a los valores preseleccionados" onClick={() => predefinidos(l)}>Preseleccionados</button>
                   </div>
                   <div className="grupo-campos">
                     <span className="etiqueta">Días y costos</span>
@@ -171,8 +193,8 @@ export default function Tripulacion({ p, set, calc }) {
     <>
       <div><h1>Tripulación.</h1><div className="filete" /></div>
       <p className="aviso">Armá la tripulación por bloque: puestos y cantidades. Los días y costos por persona salen de la configuración del proyecto (en gris);
-        se pueden cambiar en una posición. Cada posición arranca con los adicionales predefinidos (o los de la anterior del mismo puesto):
-        elegí otro de la lista o "Otro valor…" para escribirlo.</p>
+        se pueden cambiar en una posición. Cada posición arranca con la opción preseleccionada de cada adicional del proyecto (o con lo de la anterior
+        del mismo puesto): elegí otra de la lista o "Otro valor…" para escribirla. Los adicionales del proyecto se eligen en Configuración.</p>
 
       {DEPARTAMENTOS.map((d) => {
         const ls = p.lineas.filter((l) => CATEGORIA[l.categoria]?.depto === d.clave);

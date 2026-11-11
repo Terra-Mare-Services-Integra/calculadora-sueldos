@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase.js';
 import { REGIMENES, REGIMEN } from '../lib/categorias.js';
 import { proyectoNuevo, calcularProyecto } from '../lib/proyecto.js';
 import { fmt, fmt0, fmtFechaHora } from '../lib/formato.js';
+import CatalogoAdicionales from '../componentes/CatalogoAdicionales.jsx';
 
 export default function Proyectos({ ctx }) {
   const [lista, setLista] = useState(null);
@@ -89,12 +90,13 @@ function Asistente({ ctx, cerrar }) {
   const [nombre, setNombre] = useState('');
   const [cliente, setCliente] = useState('');
   const [regimen, setRegimen] = useState(null);
+  const [adicionales, setAdicionales] = useState(() => (ctx.datos.adicionales ?? []).filter((c) => c.activo && c.por_defecto).map((c) => c.id));
   const [error, setError] = useState(null);
   const [creando, setCreando] = useState(false);
 
   async function crear() {
     setCreando(true);
-    const datos = proyectoNuevo({ nombre: nombre.trim(), cliente: cliente.trim(), regimen });
+    const datos = proyectoNuevo({ nombre: nombre.trim(), cliente: cliente.trim(), regimen, adicionales });
     const { data, error: e } = await supabase.from('cs_crewing')
       .insert({ nombre: nombre.trim(), datos, created_by: ctx.email.toLowerCase() }).select('id').single();
     setCreando(false);
@@ -105,7 +107,7 @@ function Asistente({ ctx, cerrar }) {
   return (
     <section className="asistente">
       <div className="pasos">
-        {['Proyecto', 'Forma de liquidar', 'Listo'].map((n, i) => (
+        {['Proyecto', 'Forma de liquidar', 'Adicionales', 'Listo'].map((n, i) => (
           <span key={n} className={`paso ${paso === i + 1 ? 'actual' : paso > i + 1 ? 'hecho' : ''}`}><b>{i + 1}</b> {n}</span>
         ))}
         <button className="terciario" onClick={cerrar}>Cancelar</button>
@@ -143,11 +145,24 @@ function Asistente({ ctx, cerrar }) {
       )}
 
       {paso === 3 && (
-        <div className="paso-cuerpo">
-          <p><strong>{nombre}</strong>{cliente ? ` · ${cliente}` : ''} · liquidación <strong>{REGIMEN[regimen].nombre}</strong>.</p>
-          <p className="aviso">Al crearlo vas a la configuración (tipo de cambio, mes de escala, adicionales y días comunes) y de ahí a armar la tripulación.</p>
+        <div className="paso-cuerpo ancho">
+          <p className="aviso">¿Qué adicionales se pagan en este proyecto? Vienen tildados los habituales: sacá los que no van, sumá otros o creá uno nuevo.
+            El valor de cada uno (Supply A, B o C; RJ 84 % o 140 %…) se elige después en cada posición.</p>
+          <CatalogoAdicionales ctx={ctx} seleccion={adicionales} onCambio={setAdicionales} />
           <div className="fila-botones">
             <button className="secundario" onClick={() => setPaso(2)}>Atrás</button>
+            <button onClick={() => setPaso(4)}>Siguiente</button>
+          </div>
+        </div>
+      )}
+
+      {paso === 4 && (
+        <div className="paso-cuerpo">
+          <p><strong>{nombre}</strong>{cliente ? ` · ${cliente}` : ''} · liquidación <strong>{REGIMEN[regimen].nombre}</strong>.</p>
+          <p className="aviso">Adicionales: {(ctx.datos.adicionales ?? []).filter((c) => adicionales.includes(c.id)).map((c) => c.nombre).join(', ') || 'ninguno'}.</p>
+          <p className="aviso">Al crearlo vas a la configuración (tipo de cambio, mes de escala y días) y de ahí a armar la tripulación.</p>
+          <div className="fila-botones">
+            <button className="secundario" onClick={() => setPaso(3)}>Atrás</button>
             <button onClick={crear} disabled={creando}>{creando ? 'Creando…' : 'Crear proyecto'}</button>
           </div>
           {error && <p className="aviso error">{error}</p>}

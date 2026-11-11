@@ -108,6 +108,7 @@ const TABLAS = {
   overrides: () => supabase.from('cs_overrides').select('*').order('created_at', { ascending: false }),
   parametros: () => supabase.from('cs_parametros').select('*').order('vigente_desde', { ascending: false }),
   divisas: () => supabase.from('cs_divisas').select('*').order('vigente_desde', { ascending: false }),
+  adicionales: () => supabase.from('cs_adicionales').select('*').order('orden').order('nombre'),
   log: () => supabase.from('cs_log').select('*').order('at', { ascending: false }).limit(1000),
 };
 

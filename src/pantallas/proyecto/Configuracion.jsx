@@ -1,6 +1,8 @@
 import { REGIMENES } from '../../lib/categorias.js';
 import { CAMPOS_REGIMEN, AJUSTABLES_CREWING } from '../../lib/parametros.js';
-import { DIAS, EXTRAS } from '../../lib/proyecto.js';
+import { DIAS, EXTRAS, opcionInicial } from '../../lib/proyecto.js';
+import { CATEGORIA } from '../../lib/categorias.js';
+import CatalogoAdicionales from '../../componentes/CatalogoAdicionales.jsx';
 import { hoyMes } from '../../lib/escalas.js';
 import { fmt, fmtMes, fmtPct } from '../../lib/formato.js';
 import { Pct, Num, SiNo } from '../../componentes/Campos.jsx';
@@ -72,6 +74,25 @@ export default function Configuracion({ ctx, p, set, calc }) {
             );
           })}
         </div>
+      </section>
+
+      <section className="bloque">
+        <h3>Adicionales del proyecto</h3>
+        <p className="aviso">Los que se pagan en este proyecto. El valor (Supply A/B/C, RJ 84 % o 140 %…) se elige en cada posición, en Tripulación.</p>
+        <CatalogoAdicionales ctx={ctx} seleccion={p.adicionales ?? []} onCambio={(ids) => set((q) => {
+          // Un adicional que se suma al proyecto arranca en cada posición con su opción preseleccionada.
+          const nuevos = ids.filter((id) => !(q.adicionales ?? []).includes(id));
+          const catalogo = ctx.datos.adicionales ?? [];
+          const lineas = q.lineas.map((l) => {
+            const ad = { ...l.ad };
+            for (const id of nuevos) {
+              const c = catalogo.find((x) => x.id === id); // uno recién creado toma su preseleccionada al calcular
+              if (c && ad[id] === undefined) ad[id] = opcionInicial(c, l.categoria, (k) => CATEGORIA[k]?.grupo);
+            }
+            return { ...l, ad };
+          });
+          return { adicionales: ids, lineas };
+        })} />
       </section>
 
       <section className="bloque">

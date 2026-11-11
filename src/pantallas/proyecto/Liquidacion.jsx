@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CATEGORIA, REGIMEN } from '../../lib/categorias.js';
-import { ADICIONALES } from '../../lib/proyecto.js';
+import { FRANCOS, opcionInicial } from '../../lib/proyecto.js';
 import { fmt, fmtPct } from '../../lib/formato.js';
 
 const NAVEGADO = [
@@ -60,8 +60,15 @@ export default function Liquidacion({ p, calc }) {
             ))}</tr></thead>
             <tbody>
               <tr className="seccion"><td className="fijo">Adicionales</td>{cols.map((x) => <td key={x.original.id} />)}</tr>
-              {ADICIONALES.map((a) => (
-                <tr key={a.k}><td className="fijo">{a.label}</td>{cols.map((x) => <td key={x.original.id} className="n">{x.linea.a[a.k] ? fmtPct(x.linea.a[a.k]) : '—'}</td>)}</tr>
+              {(p.adicionales ?? []).map((id) => calc.catalogo.find((c) => c.id === id)).filter(Boolean).map((c) => (
+                <tr key={c.id}><td className="fijo">{c.nombre}</td>{cols.map((x) => {
+                  const sel = x.original.ad?.[c.id] ?? opcionInicial(c, x.linea.categoria, (k) => CATEGORIA[k]?.grupo);
+                  const op = sel.i != null ? c.opciones[sel.i] : null;
+                  return <td key={x.original.id} className="n">{sel.valor ? fmtPct(sel.valor) : '—'}{op?.nombre ? <div className="ayuda">{op.nombre}</div> : sel.i == null && sel.valor ? <div className="ayuda">manual</div> : null}</td>;
+                })}</tr>
+              ))}
+              {FRANCOS.map((f) => (
+                <tr key={f.k}><td className="fijo">{f.label}</td>{cols.map((x) => <td key={x.original.id} className="n">{x.linea.a[f.k] ? fmtPct(x.linea.a[f.k]) : '—'}</td>)}</tr>
               ))}
               {secciones.filter(([k]) => abiertas[k]).map(([k, n, filas]) => (
                 <Bloque key={k} titulo={n} filas={filas} clave={k} cols={cols} />

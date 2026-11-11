@@ -74,3 +74,31 @@ export function SelectorAdicional({ valor, opciones = [], onChange }) {
     </select>
   );
 }
+
+const pctTxt = (v) => `${String(Math.round(Number(v) * 1e6) / 1e4).replace('.', ',')} %`;
+
+/**
+ * Opción de un adicional del catálogo: lista con nombre y % ("Supply C · 50 %") y "Otro valor…" manual.
+ * sel = { i: índice de la opción | null (manual), valor }.
+ */
+export function SelectorOpcion({ opciones = [], sel, onChange }) {
+  const manual = sel?.i === null || sel?.i === undefined && sel?.valor;
+  const [escribiendo, setEscribiendo] = useState(false);
+  if (manual || escribiendo || !opciones.length) {
+    return (
+      <span className="adicional manual">
+        <Pct valor={sel?.valor || undefined} onChange={(x) => onChange({ i: null, valor: x ?? 0 })} ancho={58} />
+        {opciones.length > 0 && <button type="button" className="terciario volver-lista" title="Elegir de la lista"
+          onClick={() => { setEscribiendo(false); onChange({ i: 0, valor: Number(opciones[0].valor) || 0 }); }}>▾</button>}
+      </span>
+    );
+  }
+  return (
+    <select className="adicional" value={String(sel?.i ?? 0)}
+      onChange={(e) => (e.target.value === 'otro' ? (setEscribiendo(true), onChange({ i: null, valor: sel?.valor ?? 0 }))
+        : onChange({ i: Number(e.target.value), valor: Number(opciones[Number(e.target.value)].valor) || 0 }))}>
+      {opciones.map((o, i) => <option key={i} value={String(i)}>{o.nombre ? `${pctTxt(o.valor)} · ${o.nombre}` : pctTxt(o.valor)}</option>)}
+      <option value="otro">Otro valor…</option>
+    </select>
+  );
+}

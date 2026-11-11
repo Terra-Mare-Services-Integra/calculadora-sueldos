@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
 import { REGIMEN } from '../lib/categorias.js';
-import { proyectoNuevo, calcularProyecto, migrarProyecto } from '../lib/proyecto.js';
+import { proyectoNuevo, calcularProyecto, migrarProyecto, migrarACatalogo } from '../lib/proyecto.js';
 import { fmt, fmt0, fmtMes } from '../lib/formato.js';
 import { hoyMes } from '../lib/escalas.js';
 import Configuracion from './proyecto/Configuracion.jsx';
@@ -27,9 +27,10 @@ export default function Proyecto({ ctx, id, seccion }) {
     supabase.from('cs_crewing').select('*').eq('id', id).single().then(({ data, error: e }) => {
       if (e) { setError(e.message); return; }
       setFila(data);
-      setP(migrarProyecto({ ...proyectoNuevo({ nombre: data.nombre, regimen: 'terramare' }), ...data.datos, nombre: data.nombre }));
+      const base = { ...proyectoNuevo({ nombre: data.nombre, regimen: 'terramare' }), adicionales: undefined, ...data.datos, nombre: data.nombre };
+      setP(migrarACatalogo(migrarProyecto(base), ctx.datos.adicionales));
     });
-  }, [id]);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Guardado automático (al dejar de tipear un momento).
   const sinCambios = useRef(true);
@@ -74,8 +75,7 @@ export default function Proyecto({ ctx, id, seccion }) {
   const sinBasico = p.lineas.filter((l) => !calc.c.basicos[l.categoria]?.monto).length;
   if (sinBasico) avisos.push(['tripulacion', `${sinBasico} posiciones sin básico cargado`]);
   if (!p.lineas.length) avisos.push(['tripulacion', 'Agregá las posiciones']);
-  const sinAdic = p.lineas.filter((l) => !Object.values(l.a ?? {}).some((v) => v)).length;
-  if (sinAdic) avisos.push(['tripulacion', `${sinAdic} ${sinAdic === 1 ? 'posición' : 'posiciones'} sin adicionales`]);
+  if (!p.adicionales?.length) avisos.push(['configuracion', 'Elegí los adicionales del proyecto']);
   const provisoria = p.lineas.some((l) => calc.c.basicos[l.categoria]?.provisoria);
 
   const props = { ctx, p, set, calc };
