@@ -10,7 +10,7 @@ export default function Basicos({ ctx }) {
   const [editando, setEditando] = useState(null); // null | 'nueva' | acta
   return (
     <>
-      <h1>Básicos y divisas.</h1>
+      <h1>Escalas salariales.</h1>
       <div className="filete" />
       <p className="aviso">
         Las escalas se cargan por acta (FENA/FESIMAF suelen ser trimestrales y salir con atraso): cada monto tiene el mes desde el que rige.
@@ -21,7 +21,6 @@ export default function Basicos({ ctx }) {
         ? <ActaEditor ctx={ctx} acta={editando === 'nueva' ? null : editando} cerrar={() => setEditando(null)} />
         : <Actas ctx={ctx} editar={setEditando} />}
       <Overrides ctx={ctx} />
-      <Divisas ctx={ctx} />
       <Reglas ctx={ctx} />
     </>
   );
@@ -260,59 +259,6 @@ function Overrides({ ctx }) {
           <button>Agregar override</button>
         </form>
       )}
-      {aviso && <p className="aviso error">{aviso}</p>}
-    </section>
-  );
-}
-
-function Divisas({ ctx }) {
-  const actual = ctx.divisas ?? {};
-  const [val, setVal] = useState(null);
-  const [desde, setDesde] = useState(`${ctx.mes}-01`);
-  const [nota, setNota] = useState('');
-  const [aviso, setAviso] = useState(null);
-  const editando = val !== null;
-  const empezar = () => setVal(Object.fromEntries(CATEGORIAS.map((c) => [c.clave, {
-    limitrofe: actual[c.clave]?.limitrofe ?? '', no_limitrofe: actual[c.clave]?.no_limitrofe ?? '' }])));
-  async function guardar() {
-    const valores = {};
-    for (const [k, v] of Object.entries(val)) {
-      const l = leerNumero(v.limitrofe), n = leerNumero(v.no_limitrofe);
-      if (l != null || n != null) valores[k] = { limitrofe: l ?? 0, no_limitrofe: n ?? 0 };
-    }
-    const { error } = await supabase.from('cs_divisas').insert({ vigente_desde: desde, valores, nota });
-    if (error) { setAviso(error.message); return; }
-    setVal(null); setNota(''); setAviso(null);
-    ctx.recargar('divisas', 'log');
-  }
-  return (
-    <section>
-      <h2>Divisas (USD por día)</h2>
-      <p className="aviso">Monto en dólares por día que cobra cada cargo navegando a puertos limítrofes o no limítrofes.
-        {ctx.divisasFila ? ` Vigente desde ${fmtFecha(ctx.divisasFila.vigente_desde)}.` : ' Sin cargar.'}</p>
-      <div className="tabla-marco"><table className="tabla">
-        <thead><tr><th className="fijo">Cargo</th><th className="n">Limítrofe</th><th className="n">No limítrofe</th></tr></thead>
-        <tbody>
-          {CATEGORIAS.filter((c) => !c.extra).map((c) => (
-            <tr key={c.clave}>
-              <td className="fijo">{c.nombre}</td>
-              {['limitrofe', 'no_limitrofe'].map((t) => (
-                <td key={t} className="n">{editando
-                  ? <input className="num" value={val[c.clave][t]} onChange={(e) => setVal({ ...val, [c.clave]: { ...val[c.clave], [t]: e.target.value } })} />
-                  : actual[c.clave]?.[t] != null ? fmt(actual[c.clave][t]) : '—'}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table></div>
-      {ctx.editor && (editando ? (
-        <div className="fila-botones">
-          <label>Rige desde<input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} /></label>
-          <label style={{ flex: '1 1 260px' }}>Nota<input value={nota} onChange={(e) => setNota(e.target.value)} /></label>
-          <button onClick={guardar}>Guardar nueva versión</button>
-          <button className="secundario" onClick={() => setVal(null)}>Cancelar</button>
-        </div>
-      ) : <div className="fila-botones"><button className="secundario" onClick={empezar}>Actualizar divisas</button></div>)}
       {aviso && <p className="aviso error">{aviso}</p>}
     </section>
   );

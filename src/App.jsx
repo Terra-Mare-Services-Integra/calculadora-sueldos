@@ -12,7 +12,7 @@ import Proyecto from './pantallas/Proyecto.jsx';
 
 const MENU = [
   ['#/', 'Proyectos'],
-  ['#/escalas', 'Básicos y divisas'],
+  ['#/escalas', 'Escalas salariales'],
   ['#/parametros', 'Parámetros'],
   ['#/tipo-cambio', 'Tipo de cambio'],
   ['#/log', 'Log de cambios'],
