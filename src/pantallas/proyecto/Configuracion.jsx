@@ -1,6 +1,6 @@
 import { REGIMENES } from '../../lib/categorias.js';
-import { CAMPOS_REGIMEN, AJUSTABLES_CREWING, opcionesDe } from '../../lib/parametros.js';
-import { ADICIONALES, DIAS, EXTRAS } from '../../lib/proyecto.js';
+import { CAMPOS_REGIMEN, AJUSTABLES_CREWING } from '../../lib/parametros.js';
+import { DIAS, EXTRAS } from '../../lib/proyecto.js';
 import { hoyMes } from '../../lib/escalas.js';
 import { fmt, fmtMes, fmtPct } from '../../lib/formato.js';
 import { Pct, Num, SiNo } from '../../componentes/Campos.jsx';
@@ -72,20 +72,6 @@ export default function Configuracion({ ctx, p, set, calc }) {
             );
           })}
         </div>
-      </section>
-
-      <section className="bloque">
-        <h3>Adicionales comunes</h3>
-        <p className="aviso">Se aplican a todas las posiciones; en Tripulación podés cambiarlos para una posición en particular.
-          Elegí de la lista o escribí otro valor.</p>
-        <div className="rejilla">
-          {ADICIONALES.map((a) => (
-            <label key={a.k}>{a.label}
-              <Pct valor={p.defaults?.a?.[a.k]} onChange={(v) => setDef('a', a.k, v)} opciones={opcionesDe(g, a.k)} ancho={90} />
-            </label>
-          ))}
-        </div>
-        {g.ayudaAdicionales && <details><summary>Guía de adicionales</summary><p className="ayuda">{g.ayudaAdicionales}</p></details>}
       </section>
 
       <section className="bloque">

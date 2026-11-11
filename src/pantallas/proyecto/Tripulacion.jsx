@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { CATEGORIAS_LIQUIDACION, CATEGORIA } from '../../lib/categorias.js';
-import { ADICIONALES, DIAS, EXTRAS, posicionNueva } from '../../lib/proyecto.js';
-import { opcionesDe } from '../../lib/parametros.js';
-import { fmt, fmt0, fmtMes } from '../../lib/formato.js';
-import { Pct, Num, SiNo } from '../../componentes/Campos.jsx';
+import { ADICIONALES, DIAS, EXTRAS, posicionNueva, adicionalesSugeridos } from '../../lib/proyecto.js';
+import { fmt, fmt0, fmtMes, fmtPct } from '../../lib/formato.js';
+import { Num, SiNo } from '../../componentes/Campos.jsx';
 
 const GRUPOS = [['cubierta', 'Cubierta'], ['maquinas', 'Máquinas'], ['subalterno', 'Subalternos'], ['pilotaje', 'Pilotaje'], ['car', 'Escala CAR']];
 
@@ -21,10 +20,12 @@ function SelectorPuesto({ valor, onChange, autoFocus }) {
 
 export default function Tripulacion({ p, set, calc }) {
   const [nuevo, setNuevo] = useState('capitan-ultramar');
-  const g = calc.c.valores?.globales ?? {};
   const porId = Object.fromEntries(calc.lineas.map((x) => [x.original.id, x]));
   const setLinea = (id, f) => set((q) => ({ lineas: q.lineas.map((l) => (l.id === id ? { ...l, ...f(l) } : l)) }));
-  const agregar = (categoria) => set((q) => ({ lineas: [...q.lineas, posicionNueva(categoria)] }));
+  const agregar = (categoria) => set((q) => ({
+    lineas: [...q.lineas, { ...posicionNueva(categoria), a: adicionalesSugeridos(q, categoria, (k) => CATEGORIA[k]?.grupo) }],
+  }));
+  const rutaAdicionales = `#${window.location.hash.slice(1).replace(/tripulacion$/, 'adicionales')}`;
   const quitar = (id) => set((q) => ({ lineas: q.lineas.filter((l) => l.id !== id) }));
   const duplicar = (l) => set((q) => {
     const i = q.lineas.findIndex((x) => x.id === l.id);
@@ -46,8 +47,8 @@ export default function Tripulacion({ p, set, calc }) {
           <button onClick={() => agregar(nuevo)}>+ Agregar posición</button>
         </div>
       </div>
-      <p className="aviso">Cada posición toma los adicionales y días comunes del proyecto (en gris). Escribí un valor para cambiarlo solo en esa posición;
-        borralo para volver al común. Los valores propios se marcan en azul.</p>
+      <p className="aviso">Primero armá la tripulación: puestos y cantidades. Los días y costos por persona salen de la configuración del proyecto (en gris);
+        se pueden cambiar en una posición. Los adicionales de cada posición se cargan en <a href={rutaAdicionales}>Adicionales</a>.</p>
 
       {!p.lineas.length && (
         <div className="vacio">
@@ -89,16 +90,10 @@ export default function Tripulacion({ p, set, calc }) {
                 <div className="campos-posicion">
                   <div className="grupo-campos">
                     <span className="etiqueta">Adicionales</span>
-                    <div className="mini-rejilla">
-                      {ADICIONALES.map((a) => {
-                        const propio = l.a?.[a.k] !== undefined;
-                        return (
-                          <label key={a.k} className={propio ? 'propio' : ''}>{a.corto}
-                            <Pct valor={l.a?.[a.k]} heredado={p.defaults?.a?.[a.k] ?? 0} opciones={opcionesDe(g, a.k)}
-                              onChange={(v) => setLinea(l.id, (q) => ({ a: { ...q.a, [a.k]: v } }))} />
-                          </label>
-                        );
-                      })}
+                    <div className="fila-chips">
+                      {ADICIONALES.filter((a) => l.a?.[a.k]).map((a) => <span key={a.k} className="chip">{a.corto} {fmtPct(l.a[a.k])}</span>)}
+                      {!ADICIONALES.some((a) => l.a?.[a.k]) && <span className="chip alerta">sin adicionales</span>}
+                      <a href={rutaAdicionales} className="ayuda">Editar</a>
                     </div>
                   </div>
                   <div className="grupo-campos">
@@ -153,6 +148,7 @@ export default function Tripulacion({ p, set, calc }) {
         })}
       </div>
 
+      {p.lineas.length > 0 && <div className="fila-botones"><a className="boton" href={rutaAdicionales}>Seguir con los adicionales →</a></div>}
       {p.lineas.length > 0 && (
         <section className="bloque">
           <h3>Resumen de la tripulación</h3>
@@ -162,7 +158,6 @@ export default function Tripulacion({ p, set, calc }) {
             <div className="tarjeta"><div className="etiqueta">Sueldos (USD)</div><div className="grande">{fmt(calc.resumen.usd.sueldos ?? 0)}</div></div>
             <div className="tarjeta"><div className="etiqueta">Traslados, hospedaje, lavandería y EPP (USD)</div>
               <div className="grande">{fmt(['trasladoDomestico', 'trasladoPuerto', 'hospedaje', 'lavanderia', 'epp'].reduce((s, k) => s + (calc.resumen.usd[k] ?? 0), 0))}</div></div>
-            <div className="tarjeta"><div className="etiqueta">Divisas (USD)</div><div className="grande">{fmt(calc.resumen.usd.divisas ?? 0)}</div></div>
             <div className="tarjeta elegida"><div className="etiqueta">Total del proyecto (USD)</div><div className="grande">{calc.c.fx ? fmt(calc.resumen.usd.total ?? 0) : '—'}</div></div>
             <div className="tarjeta"><div className="etiqueta">Víveres (USD por día)</div><div className="grande">{fmt(calc.resumen.viveresDia)}</div></div>
           </div>

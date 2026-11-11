@@ -26,7 +26,7 @@ export const CAMPOS_REGIMEN = [
 ];
 
 // Lo que se puede ajustar por cotización desde Crewing (el resto sale de los parámetros vigentes).
-export const AJUSTABLES_CREWING = ['contrato', 'decreto633', 'divisas', 'art', 'antiguedadAnios', 'vacacionesDias'];
+export const AJUSTABLES_CREWING = ['contrato', 'decreto633', 'art', 'antiguedadAnios', 'vacacionesDias'];
 
 export const CAMPOS_GLOBALES = [
   { k: 'viveresDia', label: 'Víveres', tipo: 'monto', unidad: 'USD/día/persona' },

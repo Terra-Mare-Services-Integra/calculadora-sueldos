@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
 import { REGIMEN } from '../lib/categorias.js';
-import { proyectoNuevo, calcularProyecto } from '../lib/proyecto.js';
+import { proyectoNuevo, calcularProyecto, migrarProyecto } from '../lib/proyecto.js';
 import { fmt, fmt0, fmtMes } from '../lib/formato.js';
 import { hoyMes } from '../lib/escalas.js';
 import Configuracion from './proyecto/Configuracion.jsx';
 import Tripulacion from './proyecto/Tripulacion.jsx';
+import Adicionales from './proyecto/Adicionales.jsx';
 import PosicionDia from './proyecto/PosicionDia.jsx';
 import Liquidacion from './proyecto/Liquidacion.jsx';
 
 const SECCIONES = [
-  ['configuracion', 'Configuración', 'Tipo de cambio, escala, adicionales y días comunes'],
-  ['tripulacion', 'Tripulación', 'Posiciones y adicionales'],
+  ['configuracion', 'Configuración', 'Tipo de cambio, escala y días'],
+  ['tripulacion', 'Tripulación', 'Puestos y cantidades'],
+  ['adicionales', 'Adicionales', 'Por posición'],
   ['posicion', 'Posición por día', 'Costo diario por puesto'],
   ['liquidacion', 'Cálculo de liquidación', 'Tablas completas'],
 ];
@@ -27,7 +29,7 @@ export default function Proyecto({ ctx, id, seccion }) {
     supabase.from('cs_crewing').select('*').eq('id', id).single().then(({ data, error: e }) => {
       if (e) { setError(e.message); return; }
       setFila(data);
-      setP({ ...proyectoNuevo({ nombre: data.nombre, regimen: 'terramare' }), ...data.datos, nombre: data.nombre });
+      setP(migrarProyecto({ ...proyectoNuevo({ nombre: data.nombre, regimen: 'terramare' }), ...data.datos, nombre: data.nombre }));
     });
   }, [id]);
 
@@ -74,6 +76,8 @@ export default function Proyecto({ ctx, id, seccion }) {
   const sinBasico = p.lineas.filter((l) => !calc.c.basicos[l.categoria]?.monto).length;
   if (sinBasico) avisos.push(['tripulacion', `${sinBasico} posiciones sin básico cargado`]);
   if (!p.lineas.length) avisos.push(['tripulacion', 'Agregá las posiciones']);
+  const sinAdic = p.lineas.filter((l) => !Object.values(l.a ?? {}).some((v) => v)).length;
+  if (sinAdic) avisos.push(['adicionales', `${sinAdic} ${sinAdic === 1 ? 'posición' : 'posiciones'} sin adicionales`]);
   const provisoria = p.lineas.some((l) => calc.c.basicos[l.categoria]?.provisoria);
 
   const props = { ctx, p, set, calc };
@@ -110,6 +114,7 @@ export default function Proyecto({ ctx, id, seccion }) {
       <main className="contenido">
         {seccion === 'configuracion' && <Configuracion {...props} />}
         {seccion === 'tripulacion' && <Tripulacion {...props} />}
+        {seccion === 'adicionales' && <Adicionales {...props} />}
         {seccion === 'posicion' && <PosicionDia {...props} />}
         {seccion === 'liquidacion' && <Liquidacion {...props} />}
         {error && <p className="aviso error">{error}</p>}

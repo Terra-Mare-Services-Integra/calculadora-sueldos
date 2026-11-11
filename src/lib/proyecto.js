@@ -14,7 +14,7 @@ export const ADICIONALES = [
 ];
 export const DIAS = [
   { k: 'navegado', label: 'Navegado' }, { k: 'integracion', label: 'Integración de contrato' },
-  { k: 'ordenes15', label: 'A las órdenes 0-15' }, { k: 'ordenes90', label: 'A las órdenes 16-90' }, { k: 'divisas', label: 'Con divisas' },
+  { k: 'ordenes15', label: 'A las órdenes 0-15' }, { k: 'ordenes90', label: 'A las órdenes 16-90' },
 ];
 export const EXTRAS = [
   { k: 'lavanderia', label: 'Lavandería' }, { k: 'trasladoPuerto', label: 'Traslado a puerto' },
@@ -26,7 +26,7 @@ export const proyectoNuevo = ({ nombre, cliente = '', regimen }) => ({
   mes: null,                                   // null = mes actual (última escala vigente)
   tc: { tipo: 'divisa_venta', fecha: null, valores: null, manual: null },
   ajustes: {},                                 // contrato, decreto633, divisas, art, antigüedad, vacaciones (vacío = parámetros)
-  defaults: { a: {}, dias: { navegado: 30 }, extras: {} },
+  defaults: { dias: { navegado: 30 }, extras: {} },
   lineas: [],
   managementFee: 0,
 });
@@ -37,11 +37,32 @@ export const posicionNueva = (categoria = 'capitan-ultramar') => ({
 
 const definido = (v) => v !== undefined && v !== null && v !== '';
 
+/** Adicionales para una posición nueva: los de la última posición del mismo grupo (cubierta, máquinas…), si hay. */
+export function adicionalesSugeridos(p, categoria, grupoDe) {
+  const g = grupoDe(categoria);
+  const previa = [...p.lineas].reverse().find((l) => l.categoria === categoria) ?? [...p.lineas].reverse().find((l) => grupoDe(l.categoria) === g);
+  return previa ? { ...previa.a } : {};
+}
+
+/** Proyectos guardados con adicionales comunes (versión anterior): se pasan a cada posición. */
+export function migrarProyecto(p) {
+  const comunes = p.defaults?.a;
+  if (!comunes || !Object.keys(comunes).length) return p;
+  const lineas = p.lineas.map((l) => {
+    const a = { ...l.a };
+    for (const [k, v] of Object.entries(comunes)) if (a[k] === undefined && v !== undefined) a[k] = v;
+    return { ...l, a };
+  });
+  const { a, ...defaults } = p.defaults;
+  return { ...p, lineas, defaults };
+}
+
 /** Línea efectiva: lo propio de la posición o, si no tiene, lo común del proyecto. */
 export function lineaEfectiva(p, linea) {
   const a = {}, dias = {};
-  for (const { k } of ADICIONALES) a[k] = Number(definido(linea.a?.[k]) ? linea.a[k] : p.defaults?.a?.[k] ?? 0) || 0;
+  for (const { k } of ADICIONALES) a[k] = Number(linea.a?.[k] ?? 0) || 0; // cada posición tiene los suyos
   for (const { k } of DIAS) dias[k] = Number(definido(linea.dias?.[k]) ? linea.dias[k] : p.defaults?.dias?.[k] ?? 0) || 0;
+  dias.divisas = 0; // las divisas no se usan en los proyectos
   const ex = {};
   for (const { k } of EXTRAS) ex[k] = definido(linea.extras?.[k]) ? !!linea.extras[k] : !!p.defaults?.extras?.[k];
   return { ...linea, ...ex, regimen: p.regimen, a, dias };

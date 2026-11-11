@@ -218,3 +218,8 @@ table.tabla{ border-collapse:collapse; font-size:12px; width:100%; }
   .usuario-mail{ display:none; }
   .cifras{ grid-template-columns:1fr 1fr; }
 }
+.tabla-adicionales td{ vertical-align:top; }
+.tabla-adicionales tr.masivo td{ background:var(--tm-blue-050); }
+.tabla-adicionales tr.masivo .fijo{ background:var(--tm-blue-050); display:flex; flex-direction:column; gap:4px; }
+.tabla-adicionales .aplicar{ display:block; padding:2px 0; min-height:22px; font-size:11px; color:var(--tm-blue); }
+.tabla-adicionales .aplicar:disabled{ color:var(--tm-blue-light); background:transparent; border-color:transparent; }
