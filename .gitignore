@@ -7,3 +7,6 @@ dist/
 
 # Verificación contra el Excel interno (valores privados)
 test/local/
+
+.vercel
+.env*
