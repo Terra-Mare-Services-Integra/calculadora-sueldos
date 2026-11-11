@@ -23,7 +23,7 @@ export const CATEGORIAS = [
   { clave: '1-mozo', nombre: '1er Mozo', depto: 'cocina', grupo: 'subalterno', ingles: '1st Messman' },
   { clave: '2-mozo', nombre: '2do Mozo', depto: 'cocina', grupo: 'subalterno', ingles: '2nd Messman' },
   { clave: 'mecanico', nombre: 'Mecánico', depto: 'maquinas', grupo: 'subalterno', ingles: 'Mechanic' },
-  { clave: '1-cabo', nombre: '1er Cabo', depto: 'cubierta', grupo: 'subalterno', ingles: 'Able Seafarer Deck' },
+  { clave: '1-cabo', nombre: '1er Cabo', depto: 'maquinas', grupo: 'subalterno', ingles: 'Able Seafarer Deck' },
   { clave: 'enfermero', nombre: 'Enfermero', depto: 'cocina', grupo: 'subalterno', ingles: 'Nurse' },
   { clave: 'aux-maquina', nombre: 'Auxiliar de Máquina', depto: 'maquinas', grupo: 'subalterno', ingles: 'Wiper' },
   { clave: 'engrasador', nombre: 'Engrasador', depto: 'maquinas', grupo: 'subalterno', ingles: 'Oiler' },
@@ -44,8 +44,8 @@ export const CATEGORIAS = [
 
 // Bloques de la tripulación (departamento a bordo).
 export const DEPARTAMENTOS = [
-  { clave: 'cubierta', nombre: 'Cubierta', detalle: 'Capitán, oficiales, contramaestre, cabos y marineros' },
-  { clave: 'maquinas', nombre: 'Máquinas', detalle: 'Jefe y oficiales de máquina, electricista, bomberos, mecánico y engrasadores' },
+  { clave: 'cubierta', nombre: 'Cubierta', detalle: 'Capitán, oficiales, contramaestre y marineros' },
+  { clave: 'maquinas', nombre: 'Máquinas', detalle: 'Jefe y oficiales de máquina, electricista, bomberos, mecánico, cabos y engrasadores' },
   { clave: 'cocina', nombre: 'Cocina', detalle: 'Cocineros, ayudantes, mozos y enfermería' },
 ];
 

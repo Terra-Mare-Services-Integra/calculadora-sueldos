@@ -7,8 +7,8 @@ import { opcionesDe, adicionalesPredefinidos } from '../../lib/parametros.js';
 
 // Puestos que se ofrecen con un clic en cada bloque (el resto, en "Otro…").
 const RAPIDOS = {
-  cubierta: ['capitan-ultramar', '1-of-cubierta', '2-of-cubierta', '3-of-cubierta', 'contramaestre', '1-cabo', 'marinero'],
-  maquinas: ['jefe-maquina', '1-of-maquina', '2-of-maquina', '3-of-maquina', 'electricista', 'mecanico', 'engrasador'],
+  cubierta: ['capitan-ultramar', '1-of-cubierta', '2-of-cubierta', '3-of-cubierta', 'contramaestre', 'marinero'],
+  maquinas: ['jefe-maquina', '1-of-maquina', '2-of-maquina', '3-of-maquina', 'electricista', 'mecanico', '1-cabo', 'engrasador'],
   cocina: ['cocinero', '2-cocinero', 'ayudante-cocina', '1-mozo', '2-mozo', 'enfermero'],
 };
 const CORTOS = {
