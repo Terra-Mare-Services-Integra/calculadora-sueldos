@@ -30,7 +30,12 @@ export default function Proyectos({ ctx }) {
     if (e) setError(e.message); else window.location.hash = `#/p/${data.id}/configuracion`;
   }
   async function borrar(x) {
-    if (!confirm(`¿Borrar el proyecto "${x.nombre}"?`)) return;
+    if (!confirm(`¿Borrar el proyecto "${x.nombre}"? Se borran también sus documentos.`)) return;
+    const docs = await supabase.from('cs_documentos').select('ruta').eq('proyecto_id', x.id);
+    if (docs.data?.length) {
+      const r = await supabase.storage.from('calculadora-documentos').remove(docs.data.map((d) => d.ruta));
+      if (r.error) { setError(r.error.message); return; }
+    }
     const { error: e } = await supabase.from('cs_crewing').delete().eq('id', x.id);
     if (e) setError(e.message); else cargar();
   }

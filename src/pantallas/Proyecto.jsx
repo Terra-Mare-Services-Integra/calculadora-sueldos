@@ -8,6 +8,7 @@ import Tripulacion from './proyecto/Tripulacion.jsx';
 import PosicionDia from './proyecto/PosicionDia.jsx';
 import Liquidacion from './proyecto/Liquidacion.jsx';
 import Oferta from './proyecto/Oferta.jsx';
+import Documentos from './proyecto/Documentos.jsx';
 
 const SECCIONES = [
   ['configuracion', 'Configuración', 'Tipo de cambio, escala y días'],
@@ -15,6 +16,7 @@ const SECCIONES = [
   ['posicion', 'Posición por día', 'Costo diario por puesto'],
   ['liquidacion', 'Cálculo de liquidación', 'Tablas completas'],
   ['oferta', 'Generar oferta', 'Budgetary offer en PDF'],
+  ['documentos', 'Documentos', 'MSM, MoM, mails y otros archivos'],
 ];
 
 export default function Proyecto({ ctx, id, seccion }) {
@@ -115,6 +117,7 @@ export default function Proyecto({ ctx, id, seccion }) {
         {seccion === 'posicion' && <PosicionDia {...props} />}
         {seccion === 'liquidacion' && <Liquidacion {...props} />}
         {seccion === 'oferta' && <Oferta {...props} />}
+        {seccion === 'documentos' && <Documentos {...props} id={id} />}
         {error && <p className="aviso error">{error}</p>}
       </main>
     </div>
